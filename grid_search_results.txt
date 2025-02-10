@@ -1,0 +1,12 @@
+Model: Logistic Regression
+Best Params: {'C': 0.1, 'solver': 'liblinear'}
+Best Score: 0.6228739002932551
+
+Model: Decision Tree
+Best Params: {'max_depth': 10, 'min_samples_split': 2}
+Best Score: 0.9214076246334312
+
+Model: XGBoost
+Best Params: {'learning_rate': 0.2, 'n_estimators': 200}
+Best Score: 0.9597653958944281
+

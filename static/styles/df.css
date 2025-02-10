@@ -1,0 +1,63 @@
+.container {
+  width: 100%;
+  padding: 20px;
+}
+
+.title, .title2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.wrapper {
+  width: 100%;
+  overflow-x: scroll;
+  margin-bottom: 70px;
+  padding-bottom: 5px;
+}
+
+table {
+  display: inline;
+  word-wrap: break-word;
+  width: 100%; /* Pastikan tabel mengambil seluruh lebar kontainer */
+  max-width: 100%; /* Pastikan tabel tidak melewati batas kontainer */
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+table th{
+  width:100%;
+  word-wrap: break-word;
+  width:140px;
+  background-color: #c9c9c9;
+}
+
+th, td {
+  word-wrap: break-word;
+  background-color: #ffffff;
+  border: 1px solid #000000;
+  padding: 8px;
+  text-align: left;
+  white-space: nowrap; /* Agar teks tidak membungkus ke baris berikutnya */
+}
+
+/* width */
+.wrapper::-webkit-scrollbar {
+  height: 10px;
+}
+
+/* Handle */
+.wrapper::-webkit-scrollbar-thumb {
+  background: #A3A3A3; 
+  border-radius: 15px;
+}
+
+/* Handle on hover */
+.wrapper::-webkit-scrollbar-thumb:hover {
+  background: #858585; 
+}
+
+/* Track */
+.wrapper::-webkit-scrollbar-track {
+  border-radius: 9px;
+  background: white;
+}

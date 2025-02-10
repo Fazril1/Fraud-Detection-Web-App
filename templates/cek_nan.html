@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            display: flex;
+        }
+
+        .title {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 55px 50px 25px;
+        }
+
+        .wrapper {
+            background: #ffffff;
+            border: solid 1px #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 3px rgba(0, 0, 0, .04), 0 4px 12px rgba(0, 0, 0, .06);
+            transition: box-shadow .2s ease-in-out;
+            margin: 20px 50px 20;
+        }
+
+        .wrapper .container {
+            position: relative;
+            padding: 12px;
+            margin: 100px;
+        }
+
+        pre {
+            width: fit-content;
+            white-space: pre-wrap; /* Ensures text wraps and doesn't overflow */
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">
+            <h1>Nilai NaN pada Dataset</h1>
+        </div>
+        <div class="wrapper">
+            <pre>{{nan|safe}}</pre>
+        </div>
+    </div>
+</body>
+</html>

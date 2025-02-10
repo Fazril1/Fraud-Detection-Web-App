@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Info</title>
+    <link rel='stylesheet' href="{{url_for('static',filename='styles/info_data.css')}}">
+</head>
+<body>
+    <div>
+        <h1 style="margin-top: 2%; margin-bottom: 2%;">
+            Info Dataset
+        </h1>
+        <div class="wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class='column_name'>Nama Kolom</th>
+                        <th class='nn_count'>Jumlah Non-Null</th>
+                        <th class='dtype'>Tipe Data Kolom</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(info['column']|length) %}
+                    <tr>
+                        <td>{{ info['column'][i] }}</td>
+                        <td>{{ info['non_null_count'][i] }}</td>
+                        <td>{{ info['dtype'][i] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class='details'>
+            <p>Jumlah tipe data pada tiap kolom dataset adalah:</p>
+            {% for dtype, count in dtype_counts.items() %}
+            {{ dtype }}: {{ count }},
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

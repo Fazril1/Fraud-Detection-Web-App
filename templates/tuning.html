@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyperparameter Tuning</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: 1px solid #A3A3A3;
+            background-color: #f4f4f4;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #e0e0e0;
+        }
+        #guide {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+        .error-message {
+            color: red;
+            margin-top: 5px;
+            font-weight: bold;
+            display: none;
+        }
+        .success-message {
+            color: green;
+            margin-top: 5px;
+            font-weight: bold;
+            display: none;
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+        .input-container {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div style="color: red;">
+        *You can return to the home page by pressing the back button on your browser if you do not want to tune the model. 
+    </div>
+    <h1>Hyperparameter Tuning</h1>
+    <div class="input-container">
+        <label for="C">C for Logistic Regression:</label>
+        <input type="text" id="C">
+        <div id="C-error" class="error-message">Invalid C value.</div>
+    </div>
+    <div class="input-container">
+        <label for="solver">Solver for Logistic Regression:</label>
+        <input type="text" id="solver">
+        <div id="solver-error" class="error-message">Invalid solver value.</div>
+    </div>
+    <div class="input-container">
+        <label for="max_depth">max_depth for Decision Tree:</label>
+        <input type="text" id="max_depth">
+        <div id="max_depth-error" class="error-message">Invalid max_depth value.</div>
+    </div>
+    <div class="input-container">
+        <label for="min_samples_leaf">min_samples_leaf for Decision Tree:</label>
+        <input type="text" id="min_samples_leaf">
+        <div id="min_samples_leaf-error" class="error-message">Invalid min_samples_leaf value.</div>
+    </div>
+    <div class="input-container">
+        <label for="min_samples_split">min_samples_split for Decision Tree:</label>
+        <input type="text" id="min_samples_split">
+        <div id="min_samples_split-error" class="error-message">Invalid min_samples_split value.</div>
+    </div>
+    <div class="input-container">
+        <label for="learning_rate">learning_rate for XGBoost:</label>
+        <input type="text" id="learning_rate">
+        <div id="learning_rate-error" class="error-message">Invalid learning_rate value.</div>
+    </div>
+    <div class="input-container">
+        <label for="n_estimators">n_estimators for XGBoost:</label>
+        <input type="text" id="n_estimators">
+        <div id="n_estimators-error" class="error-message">Invalid n_estimators value.</div>
+    </div>
+    <button id="setTuningParamsBtn">Set Tuning Parameters</button>
+    <div id="message" class="success-message"></div>
+
+    <div style="margin-top: 15px; color: red;">
+        Note: You will be redirected to the home page for the next step (Model Training) after completing this step (Hyperparameter Tuning).
+    </div>
+    
+    <div id="guide">
+        <h2>Parameter Guidelines</h2>
+        <ul>
+            <li><strong>Logistic Regression:</strong></li>
+            <ul>
+                <li><strong>C:</strong> Number value > 0 (e.g., 0.1, 1, 10)</li>
+                <li><strong>solver:</strong> 'liblinear', 'lbfgs'</li>
+            </ul>
+            <li><strong>Decision Tree:</strong></li>
+            <ul>
+                <li><strong>max_depth:</strong> Number value >= 1 (Decimal not allowed) (e.g., None, 10, 20)</li>
+                <li><strong>min_samples_leaf:</strong> Number value >= 1 (Decimal not allowed) (e.g., 1, 2, 5)</li>
+                <li><strong>min_samples_split:</strong> Number value >= 2 (Decimal not allowed) (e.g., 2, 5, 10)</li>
+            </ul>
+            <li><strong>XGBoost:</strong></li>
+            <ul>
+                <li><strong>learning_rate:</strong> Number value > 0 (e.g., 0.01, 0.1, 0.2)</li>
+                <li><strong>n_estimators:</strong> Number value >= 1 (Decimal not allowed) (e.g., 50, 100, 200)</li>
+            </ul>
+        </ul>
+    </div>
+
+    <script>
+        function validateNumeric(value) {
+            return !isNaN(value) && value !== '' && Number(value) > 0;
+        }
+
+        function validateInteger(value, minValue) {
+            const num = Number(value);
+            return Number.isInteger(num) && num >= minValue;
+        }
+
+        function showErrorMessage(elementId, message) {
+            const errorDiv = document.getElementById(elementId);
+            errorDiv.innerHTML = message;
+            errorDiv.style.display = 'block';
+            errorDiv.classList.add('shake');
+            setTimeout(() => {
+                errorDiv.classList.remove('shake');
+            }, 500);
+        }
+
+        function showSuccessMessage(message) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = message;
+            messageDiv.style.display = 'block';
+            setTimeout(() => {
+                window.location.href = '/konten';
+            }, 2000); // Delay redirect for 2 seconds
+        }
+
+        function hideErrorMessages() {
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.style.display = 'none';
+            });
+        }
+
+        document.getElementById('setTuningParamsBtn').addEventListener('click', () => {
+            hideErrorMessages();
+
+            const params = {
+                logistic_regression: {
+                    C: parseFloat(document.getElementById('C').value), 
+                    solver: document.getElementById('solver').value
+                },
+                decision_tree: {
+                    max_depth: parseInt(document.getElementById('max_depth').value),
+                    min_samples_leaf: parseInt(document.getElementById('min_samples_leaf').value),
+                    min_samples_split: parseInt(document.getElementById('min_samples_split').value) 
+                },
+                xgboost: {
+                    learning_rate: parseFloat(document.getElementById('learning_rate').value), 
+                    n_estimators: parseInt(document.getElementById('n_estimators').value)
+                }
+            };
+
+            let isValid = true;
+
+            if (!validateNumeric(params.logistic_regression.C)) {
+                showErrorMessage('C-error', 'Invalid C value. Please input a positive number.');
+                isValid = false;
+            }
+
+            if (params.logistic_regression.solver !== 'liblinear' && params.logistic_regression.solver !== 'lbfgs') {
+                showErrorMessage('solver-error', "Invalid solver value. Please input 'liblinear' or 'lbfgs'.");
+                isValid = false;
+            }
+
+            if (params.decision_tree.max_depth !== 'None' && !validateInteger(params.decision_tree.max_depth, 1)) {
+                showErrorMessage('max_depth-error', 'Invalid max_depth value. Please input a None or a positive integer.');
+                isValid = false;
+            }
+
+            if (!validateInteger(params.decision_tree.min_samples_leaf, 1)) {
+                showErrorMessage('min_samples_leaf-error', 'Invalid min_samples_leaf value. Please input an integer greater than or equal to 2.');
+                isValid = false;
+            }
+
+            if (!validateInteger(params.decision_tree.min_samples_split, 2)) {
+                showErrorMessage('min_samples_split-error', 'Invalid min_samples_split value. Please input an integer greater than or equal to 2.');
+                isValid = false;
+            }
+
+            if (!validateNumeric(params.xgboost.learning_rate)) {
+                showErrorMessage('learning_rate-error', 'Invalid learning_rate value. Please input a positive number.');
+                isValid = false;
+            }
+
+            if (!validateInteger(params.xgboost.n_estimators, 1)) {
+                showErrorMessage('n_estimators-error', 'Invalid n_estimators value. Please input a positive integer.');
+                isValid = false;
+            }
+
+            if (isValid) {
+                fetch('/set_tuning_params', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(params)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showSuccessMessage('Parameters set successfully.');
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        });
+    </script>
+</body>
+</html>

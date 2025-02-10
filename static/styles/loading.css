@@ -1,0 +1,252 @@
+#circleloading {
+  display: inline-block;
+  position: fixed;
+  width: 3rem;
+  height: 3rem;
+  bottom: 14%; 
+  left: 48%;
+  vertical-align: text-bottom;
+  border: 0.25em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner-border 0.75s linear infinite;
+}
+
+@keyframes spinner-border {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+#loadinguploading {
+    display: none;
+    position: fixed;
+    color: #000000;
+    bottom: 5%; 
+    left: 50%;
+    transform: translate(-50%, 0);
+    z-index: 1000; 
+    font-size: 24px; 
+}
+
+#loadingdownloadguide {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 33%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingviewdata {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 33%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadinginfodata {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 35%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingchecknan {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingremovenan {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingchangedatatype {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 33%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingdownloadcorrelationmatrix {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 39%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingremovecolumn {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 32%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingsettarget {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingsplitdata {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 31%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingnormalize {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 29%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+/*
+#loadingrandomsearch {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 29%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+*/
+
+#loadinggridsearch {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 29%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingtuning {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 29%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadinglr {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 40%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingdt {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 37%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingxgb {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 35%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingviewresult {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingviewshap {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingdownloadlrpredictedmodel {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingdownloaddtpredictedmodel {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingdownloadxgbpredictedmodel {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}

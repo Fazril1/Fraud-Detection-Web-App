@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+    <link rel='stylesheet' href="{{url_for('static',filename='styles/style.css')}}">
+    <link rel='stylesheet' href="{{url_for('static',filename='styles/sidebar-scorllbar.css')}}">
+    <link rel='stylesheet' href="{{url_for('static',filename='styles/loading.css')}}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="{{url_for('static',filename='javascript/script.js')}}"></script>
+</head>
+<body>
+    <div class="sidebar-container" style="padding-right: 5px; background-color:white;">
+        <div id="sidebar" class="sidebar">
+            <button class="downloadGuideBtn" id="downloadGuideBtn">Download Guide</button>
+            <div id="loadingdownloadguide" style="display: none;">Downloading Guide...</div>
+            <div id="downloadGuideResult"></div>
+
+            <button class="btn" id="viewDataFrameBtn" style="border: 1px solid #A3A3A3;">View Dataset</button>
+            <div id="loadingviewdata" style="display: none;">Viewing Dataframe...</div>
+            <div id="dataframeResult"></div>
+
+            <button class="btn" id="infoDatasetBtn" style="border: 1px solid #A3A3A3;">Info Dataset</button>
+            <div id="loadinginfodata" style="display: none;">Viewing info dataframe...</div>
+            <div id="infoDataset"></div>
+
+            <button class="btn" id="checkNanBtn" style="border: 1px solid #A3A3A3;">Check NaN</button>
+            <div id="loadingchecknan" style="display: none;">Checking Nan...</div>
+            <div id="nanResult"></div>
+
+            <button class="btn" id="removeNanBtn" style="border: 1px solid #A3A3A3;">Remove NaN</button>
+            <div id="loadingremovenan" style="display: none;">Removing Nan...</div>
+            <div id="removeNanResult"></div>
+
+            <button class="btn" id="changeDataTypeBtn" style="border: 1px solid #A3A3A3;">Change Data Type</button>
+            <div id="loadingchangedatatype" style="display: none;">Changing Data Type...</div>
+            <div id="changeDataTypeResult"></div>
+
+            <button class="btn" id="downloadCorrelationBtn" style="border: 1px solid #A3A3A3;">Download Correlation Matrix</button>
+            <div id="loadingdownloadcorrelationmatrix" style="display: none;">Downloading Correlation Matrix...</div>
+            <div id="downloadingCorrelationMatrixResult"></div>
+
+            <div style="border: 1px solid #A3A3A3; border-radius: .25rem; padding: 10px; margin-bottom:20px; background-color:#FFFF; box-shadow: 0px 5px 10px 0 rgba(0,0,0,0.16);">
+                <input type="text" id="columnNameToRemove" placeholder="Enter Column Name" style="width:100%; margin-bottom:5px;">
+                <button class="btn" id="removeColumnBtn" style="margin-bottom: 0px; background-color:#D3D3D3;">Remove Column</button>
+            </div>
+
+            <div id="loadingremovecolumn" style="display: none;">Removing Column...</div>
+            <div id="removeColumnResult"></div>
+
+            <div style="border: 1px solid #A3A3A3; border-radius: .25rem; padding: 10px; margin-bottom:20px; background-color:#FFFF; box-shadow: 0px 5px 10px 0 rgba(0,0,0,0.16);">
+                <input type="text" id="targetColumnName" placeholder="Enter Target Name" style="width:100%; margin-bottom:5px;">
+                <button class="btn" id="setTargetBtn" style="margin-bottom: 0px; background-color:#D3D3D3;">Set Target</button>
+            </div>
+
+            <div id="loadingsettarget" style="display: none;">Setting Target...</div>
+            <div id="setTargetResult"></div>
+
+            <div style="border: 1px solid #A3A3A3; border-radius: .25rem; padding: 10px; margin-bottom:20px; background-color:#FFFF; box-shadow: 0px 5px 10px 0 rgba(0,0,0,0.16);">
+                <input type="number" id="testSizeInput" placeholder="Enter test size (%)" style="width:100%; margin-bottom:5px;">
+                <button class="btn" id="splitDataBtn" style="margin-bottom: 0px; background-color:#D3D3D3;">Split Data</button>
+            </div>
+
+            <div id="loadingsplitdata" style="display: none;">Setting Test Size...</div>
+            <div id="splitDataResult"></div>
+
+            <button class="btn" id="normalizeDataBtn" style="border: 1px solid #A3A3A3;">Normalize Data</button>
+            <div id="loadingnormalize" style="display: none;">Normalizing...</div>
+            <div id="normalizeDataResult"></div>
+
+            <!--
+            <button class="btn" id="randomSearchBtn" style="border: 1px solid #A3A3A3;">Random Search</button>
+            <div id="loadingrandomsearch" style="display: none;">Downloading Note...</div>
+            <div id="randomSearchResult"></div>
+            -->
+
+            <button class="btn" id="gridSearchBtn" style="border: 1px solid #A3A3A3;">Grid Search</button>
+            <div id="loadinggridsearch" style="display: none;">Downloading Note...</div>
+            <div id="gridSearchResult"></div>
+
+            <button class="btn" id="tuningBtn" style="border: 1px solid #A3A3A3;">Hyperparameter Tuning</button>
+            <div id="loadingtuning" style="display: none;">Set the Parameter...</div>
+            <div id="tuningResult"></div>
+
+            <button class="btn" id="trainLRModelBtn" style="border: 1px solid #A3A3A3;">Training LR Model</button>
+            <div id="loadinglr" style="display: none;">Training Logistic Regression Model...</div>
+            <div id="trainResult"></div>
+
+            <button class="btn" id="trainDTModelBtn" style="border: 1px solid #A3A3A3;">Training DT Model</button>
+            <div id="loadingdt" style="display: none;">Training Decision Tree Model...</div>
+            <div id="trainResult"></div>
+
+            <button class="btn" id="trainXGBModelBtn" style="border: 1px solid #A3A3A3;">Training XGB Model</button>
+            <div id="loadingxgb" style="display: none;">Training XGBoost Model...</div>
+            <div id="trainResult"></div>
+
+            <button class="btn" id="viewModelResultBtn" style="border: 1px solid #A3A3A3;">View Result</button>
+            <div id="loadingviewresult" style="display: none;">Viewing Result...</div>
+            <div id="modelResult"></div>
+            
+            <button class="btn" id="viewShapBtn" style="border: 1px solid #A3A3A3;">View SHAP</button>
+            <div id="loadingviewshap" style="display: none;">Viewing SHAP...</div>
+            <div id="shapResult"></div>
+
+            <button class="btn" id="downloadLrPredictedModelBtn" style="border: 1px solid #A3A3A3;">Download LR Predicted Model Dataset</button>
+            <div id="loadingdownloadlrpredictedmodel" style="display: none;">Downloading LR CSV...</div>
+            <div id="downloadLrPredictedModelResult"></div>
+
+            <button class="btn" id="downloadDtPredictedModelBtn" style="border: 1px solid #A3A3A3;">Download DT Predicted Model Dataset</button>
+            <div id="loadingdownloaddtpredictedmodel" style="display: none;">Downloading DT CSV...</div>
+            <div id="downloadDtPredictedModelResult"></div>
+
+            <button class="btn" id="downloadXgbPredictedModelBtn" style="border: 1px solid #A3A3A3;">Download XGB Predicted Model Dataset</button>
+            <div id="loadingdownloadxgbpredictedmodel" style="display: none;">Downloading XGB CSV...</div>
+            <div id="downloadXgbPredictedModelResult"></div>
+        </div>
+    </div>
+    
+    <div id="content">
+        <span style="font-weight: 500; border: 1px solid; border-radius: 10px; padding: 10px; background-color: white; margin-right: 10px;">
+            Anda dapat mengunduh panduan penggunaan aplikasi dengan klik tombol <span style="font-weight: 900;">"Unduh Panduan"</span>, atau anda juga dapat langsung memulai tahap pertama, yaitu dengan melihat ringkasan dataset terlebih dahulu dengan klik tombol <span style="font-weight: 900;">"Lihat Dataset"</span> dan menyelesaikan tahap-tahap selanjutnya.
+        </span>
+    </div> 
+</body>
+</html>

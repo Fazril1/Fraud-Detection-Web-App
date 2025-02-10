@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dataset Info</title>
+        <link rel='stylesheet' href="{{url_for('static',filename='styles/df.css')}}">
+    </head>
+<body>
+    <div class="container">
+        <div class="title">
+            <h1>Lima Baris Pertama Dataset</h1>
+        </div>
+        <div class="wrapper">
+            <table>
+                {{ df_head_html|safe }}
+            </table>
+        </div>
+        <div class="title2">
+            <h1>Lima Baris Terakhir Dataset</h1>
+        </div>
+        <div class="wrapper">
+            <table>
+                {{ df_tail_html|safe }}
+            </table>
+        </div>
+    </div>
+</body>
+</html>

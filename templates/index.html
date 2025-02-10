@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+    <link rel='stylesheet' href="{{url_for('static',filename='styles/style.css')}}">
+    <link rel='stylesheet' href="{{url_for('static',filename='styles/loading.css')}}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="{{url_for('static',filename='javascript/script.js')}}"></script>
+</head>
+    <body>
+        <div class="container">
+            <div class="title">
+                <h1>Fraud Detection Web App</h1>
+            </div>
+            <div class="upload-wrapper">
+                <div class="upload-container">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="customFile" name="file" accept=".csv">
+                            <label class="custom-file-label" for="customFile" id="fileLabel">Choose file...</label>
+                        </div>
+                        <button type="submit" class="submitting-message">
+                            <div class="submitting-message-child"></div>
+                            <div class="upload-file">Upload File</div>
+                        </button>
+                        <!-- Elemen loading -->
+                        <div class="circleloading" id="circleloading" role="status" style="display: none;">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        <div id="loadinguploading" style="display: none;">Uploading...</div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
