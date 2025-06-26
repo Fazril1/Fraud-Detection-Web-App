@@ -84,6 +84,9 @@ DT_model = DecisionTreeClassifier()
 
 XGB_model = XGBClassifier()
 
+@app.route('/')
+def home():
+    return "Hello dari Render!"
 
 
 @app.route('/')
