@@ -123,8 +123,15 @@ $(document).ready(function() {
     });
   });
 
-    
-   $('#removeColumnBtn').click(function() {
+   $('#removeRedundancyFeatureBtn').click(function() {
+       $('#loadingremoveRedundancyFeature').show();
+     $.get('/remove_redundancy_feature', function(response) {
+       $('#content').text(response.message);
+       $('#loadingremoveRedundancyFeature').hide();
+       });
+    });
+
+    $('#removeColumnBtn').click(function() {
     var columnName = $('#columnNameToRemove').val(); 
       $('#loadingremovecolumn').show();
     $.get('/remove_column?column=' + columnName, function(response) {
@@ -132,8 +139,8 @@ $(document).ready(function() {
       $('#loadingremovecolumn').hide();
       });
    });
-    
-    $('#setTargetBtn').click(function() {
+
+   $('#setTargetBtn').click(function() {
     var targetColumnName = $('#targetColumnName').val(); 
       $('#loadingsettarget').show();
     $.get('/set_target?column=' + targetColumnName, function(response) {
@@ -159,7 +166,6 @@ $(document).ready(function() {
        });
     });
 
-    /*
     $('#randomSearchBtn').click(function() {
         $('#loadingrandomsearch').show();
     
@@ -185,8 +191,8 @@ $(document).ready(function() {
             }
         });
     });
-    */
-
+  
+    /*
     $('#gridSearchBtn').click(function() {
        $('#loadinggridsearch').show();
 
@@ -212,7 +218,7 @@ $(document).ready(function() {
            }
        });
     });
-
+    */
 
 
    $('#tuningBtn').click(function() {
@@ -259,12 +265,28 @@ $(document).ready(function() {
       $('#loadingviewresult').hide();
       });
    });
-    
-    $('#viewShapBtn').click(function() {
-      $('#loadingviewshap').show();
-    $.get('/view_shap', function(response) {
+     
+    $('#viewShapBtnLr').click(function() {
+      $('#loadingviewshaplr').show();
+    $.get('/view_shap_lr', function(response) {
       $('#content').html(response.message);
-      $('#loadingviewshap').hide();
+      $('#loadingviewshaplr').hide();
+      });
+    });
+
+    $('#viewShapBtnDt').click(function() {
+      $('#loadingviewshapdt').show();
+    $.get('/view_shap_dt', function(response) {
+      $('#content').html(response.message);
+      $('#loadingviewshapdt').hide();
+      });
+    });
+
+    $('#viewShapBtnXgb').click(function() {
+      $('#loadingviewshapxgb').show();
+    $.get('/view_shap_xgb', function(response) {
+      $('#content').html(response.message);
+      $('#loadingviewshapxgb').hide();
       });
     });  
 

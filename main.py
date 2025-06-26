@@ -3,14 +3,13 @@ import numpy as np
 import matplotlib.pyplot as plt  
 import seaborn as sns  
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
-from sklearn.model_selection import train_test_split, GridSearchCV
-#from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 #from scipy.stats import uniform, randint
 from xgboost import XGBClassifier  
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier 
 from sklearn.metrics import mean_squared_error, mean_absolute_error, roc_curve, roc_auc_score, roc_curve, accuracy_score, confusion_matrix, classification_report, recall_score, precision_score, f1_score
-from flask import Flask, redirect, url_for, request, render_template, jsonify, send_file, make_response, Response
+from flask import Flask, redirect, url_for, request, render_template, jsonify, send_file, make_response, Response, render_template_string
 import json
 from pyngrok import ngrok
 import os
@@ -48,36 +47,28 @@ DT_train_duration = None
 XGB_train_duration = None
 X_test_data = None
 
-'''
-param_distributions = {
-    'Logistic Regression': {
-        'C': uniform(0.1, 99.9),  
-        'solver': ['liblinear', 'lbfgs']
-    },
-    'Decision Tree': {
-        'max_depth': [None] + list(randint(1, 51).rvs(10)),  
-        'min_samples_split': randint(2, 21)  
-    },
-    'XGBoost': {
-        'n_estimators': randint(50, 1001),  
-        'learning_rate': uniform(0.01, 0.29)  
-    }
-}
-'''
 
 param_grids = {
     'Logistic Regression': {
-        'C': [0.1, 1, 10],
-        'solver': ['liblinear', 'lbfgs']
+        'C': [10, 50, 100],
+        'penalty': ['elasticnet'],
+        'solver': ['saga'],
+        'l1_ratio': [0.0, 0.5, 1.0]
     },
     'Decision Tree': {
-        'max_depth': [None, 10, 20],
-        'min_samples_leaf': [1, 2, 5],
-        'min_samples_split': [2, 5, 10]
+        'max_depth': [5, 8, 10],
+        'min_samples_split': [10, 30, 50],
+        'min_samples_leaf': [5, 10, 20],
+        'ccp_alpha': [0.01, 0.05, 0.1]
     },
     'XGBoost': {
-        'n_estimators': [50, 100, 200],
-        'learning_rate': [0.01, 0.1, 0.2]
+        'max_depth': [3, 4, 5, 6],
+        'learning_rate': [0.01, 0.05, 0.1],
+        'n_estimators': [100, 200, 300],
+        'subsample': [0.5, 0.6, 0.7, 0.8],
+        'colsample_bytree': [0.5, 0.6, 0.7, 0.8],
+        'reg_alpha': [0.1, 0.5, 1],
+        'reg_lambda': [1, 5, 10]
     }
 }
 
@@ -87,9 +78,9 @@ tuned_params = {
     'XGBoost': {}
 }
 
-LR_model = LogisticRegression(max_iter=100000)
+LR_model = LogisticRegression(max_iter=20000)
 
-DT_model = DecisionTreeClassifier(random_state=42)
+DT_model = DecisionTreeClassifier()
 
 XGB_model = XGBClassifier()
 
@@ -125,7 +116,7 @@ def konten():
 
 @app.route('/download_guide')
 def download_guide():
-    path = 'static/guide/Panduan.txt'
+    path = 'static/guide/Prosedur Pengoperasian.txt'
     return send_file(path, as_attachment=True)
 
 @app.route('/view_dataframe')
@@ -170,6 +161,7 @@ def info_dataset():
     except Exception as e:
         app.logger.error(f'Error in info_dataset: {e}')
         return jsonify({"message": f"An error occurred: {e}"}), 500
+    
 
 
 @app.route('/check_nan')
@@ -244,10 +236,63 @@ def change_data_type():
     except Exception as e:
         return jsonify(
             {"message": f"Failed to apply Label Encoding: {str(e)}"})
+    
+
+@app.route('/remove_redundancy_feature')
+def remove_redundancy_feature():
+    global uploaded_df
+
+    # Logging untuk memastikan route terpanggil
+    print("Endpoint /remove_redundancy_feature dipanggil.")
+
+    if uploaded_df is None:
+        return jsonify({"message": "Data belum diunggah. Silakan upload dataset terlebih dahulu."})
+
+    try:
+        # Pisahkan fitur dan target jika kolom 'Class' ada
+        if 'Class' in uploaded_df.columns:
+            target_series = uploaded_df['Class']
+            df_features_only = uploaded_df.drop(columns=['Class'])
+        else:
+            target_series = None
+            df_features_only = uploaded_df.copy()
+
+        # Hitung korelasi spearman antar fitur
+        corr_matrix = df_features_only.corr(method='spearman').abs()
+        upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+
+        threshold = 0.9
+        to_drop = [column for column in upper.columns if any(upper[column] > threshold)]
+
+        if not to_drop:
+            return jsonify({"message": "Tidak ada fitur redundan yang ditemukan. Tidak ada kolom yang dihapus."})
+
+        # Drop kolom redundan
+        df_cleaned = df_features_only.drop(columns=to_drop)
+
+        # Tambahkan kembali kolom target jika sebelumnya ada
+        if target_series is not None:
+            df_cleaned['Class'] = target_series
+
+        # Update uploaded_df
+        uploaded_df = df_cleaned.copy()
+
+        return jsonify({
+            "message": f"{len(to_drop)} fitur dihapus karena korelasi tinggi (> {threshold}): {to_drop}",
+            "features_removed": to_drop,
+            "remaining_features": df_cleaned.columns.tolist()
+        })
+
+    except Exception as e:
+        print(f"Error saat menghapus fitur redundan: {e}")
+        return jsonify({"error": str(e)})
 
 
 def generate_correlation_heatmap(file_path):
     global uploaded_df
+
+    if uploaded_df.empty:
+        raise ValueError("Dataframe kosong. Upload data terlebih dahulu.")
 
     plt.figure(figsize=(35, 35))
     correlation_matrix = uploaded_df.corr(method='spearman').round(5)
@@ -262,23 +307,28 @@ def generate_correlation_heatmap(file_path):
 
     plt.savefig(file_path, format='png')
     plt.close()
-  
 
 
 @app.route('/download_correlation_matrix')
 def download_correlation_matrix():
-
-    tmp_file = '/tmp/correlation_matrix.png'  
-
     try:
-        generate_correlation_heatmap(tmp_file)
+        # Simpan ke folder static
+        static_folder = 'static'
+        os.makedirs(static_folder, exist_ok=True)
+        file_path = os.path.join(static_folder, 'correlation_matrix.png')
 
-        response = make_response(send_file(tmp_file, mimetype='image/png'))
-        response.headers['Content-Disposition'] = 'attachment; filename=correlation_matrix.png'
-        return response
+        # Generate gambar heatmap
+        generate_correlation_heatmap(file_path)
+
+        # Kirim file untuk diunduh
+        return send_file(file_path,
+                         mimetype='image/png',
+                         as_attachment=True,
+                         download_name='correlation_matrix.png')
 
     except Exception as e:
-        return jsonify({"message": f"Failed to generate or download the correlation matrix: {str(e)}"})
+        return jsonify({"message": f"Failed to generate or download the correlation matrix: {str(e)}"}), 500
+
 
 
 @app.route('/remove_column')
@@ -293,6 +343,7 @@ def remove_column():
                      axis=1)  
     return jsonify(
         {"message": f"Column '{column_name}' removed successfully."})
+
 
 
 @app.route('/set_target')
@@ -368,6 +419,7 @@ def normalize_data():
 
     return jsonify({"message": "Data normalized successfully."})
 
+
 @app.route('/check_normalize')
 def check_data_status():
     global X_train_scaled, X_test_scaled
@@ -381,44 +433,117 @@ def check_data_status():
     except Exception as e:
         return jsonify({"message": f"Failed to check the data: {str(e)}"})
 
+def check_fit_status(train_acc, test_acc):
+    train_percent = train_acc * 100
+    test_percent = test_acc * 100
+    gap = abs(train_percent - test_percent)
 
-'''
+    if train_percent < 80 and test_percent < 80 and gap < 5:
+        return "Underfitting ❄️"
+    elif train_percent > 95 and 90 <= test_percent <= 95 and gap > 5:
+        return "Overfitting 🔥"
+    elif train_percent == 100:
+        return "Overfitting 🔥"
+    else:
+        return "Good Fit ✅"
+
 @app.route('/random_search')
 def random_search():
-    global X_train_scaled, y_train, LR_model, DT_model, XGB_model, param_distributions
+    global X_train_scaled, y_train, X_test_scaled, y_test, LR_model, DT_model, XGB_model, param_grids
 
     results = {}
 
-    models = {
-        'Logistic Regression': LR_model,
-        'Decision Tree': DT_model,
-        'XGBoost': XGB_model
-    }
+    models = [
+        ('Logistic Regression', LR_model),
+        ('Decision Tree', DT_model),
+        ('XGBoost', XGB_model)
+    ]
 
-    for model_name, model in models.items():
-        param_dist = param_distributions.get(model_name, {})
+    for model_name, model in models:
+        param_dist = param_grids.get(model_name, {})
         if not param_dist:
             continue
 
-        random_search = RandomizedSearchCV(estimator=model, param_distributions=param_dist, n_iter=100, cv=5, scoring='accuracy', n_jobs=-1, random_state=42)
+        random_search = RandomizedSearchCV(
+            estimator=model,
+            param_distributions=param_dist,
+            n_iter=12,
+            cv=5,
+            scoring='accuracy',
+            n_jobs=-1,
+            random_state=42
+        )
+
         random_search.fit(X_train_scaled, y_train)
 
-        best_params = random_search.best_params_
-        best_score = random_search.best_score_
+        candidates = random_search.cv_results_
+        best_fit = None
+        smallest_gap = float('inf')
 
-        results[model_name] = {
-            'best_params': best_params,
-            'best_score': best_score
-        }
+        for i in range(len(candidates['params'])):
+            params = candidates['params'][i]
+            try:
+                model.set_params(**params)
+                model.fit(X_train_scaled, y_train)
+                train_acc = accuracy_score(y_train, model.predict(X_train_scaled))
+                test_acc = accuracy_score(y_test, model.predict(X_test_scaled))
+                gap = abs(train_acc - test_acc)
+
+
+                if gap < smallest_gap:
+                    smallest_gap = gap
+                    best_fit = {
+                        'params': params,
+                        'train_accuracy': train_acc,
+                        'test_accuracy': test_acc,
+                        'gap': gap
+                    }
+            except:
+                continue
+
+        if best_fit:
+            train_acc = best_fit['train_accuracy']
+            test_acc = best_fit['test_accuracy']
+            gap = best_fit['gap']
+            fit_status = check_fit_status(train_acc, test_acc)
+
+            results[model_name] = {
+                'best_params': best_fit['params'],
+                'train_accuracy': f"{train_acc * 100:.2f}%",
+                'test_accuracy': f"{test_acc * 100:.2f}%",
+                'gap': f"{gap * 100:.2f}%",
+                'fit_status': fit_status
+            }
+        else:
+            if model_name == 'Logistic Regression':
+                fallback_params = {'C': 1.0, 'penalty': 'l2', 'solver': 'saga'}
+                model.set_params(**fallback_params)
+                model.fit(X_train_scaled, y_train)
+                train_acc = accuracy_score(y_train, model.predict(X_train_scaled))
+                test_acc = accuracy_score(y_test, model.predict(X_test_scaled))
+                gap = abs(train_acc - test_acc)
+                fit_status = check_fit_status(train_acc, test_acc)
+
+                results[model_name] = {
+                    'best_params': fallback_params,
+                    'train_accuracy': f"{train_acc * 100:.2f}%",
+                    'test_accuracy': f"{test_acc * 100:.2f}%",
+                    'gap': f"{gap * 100:.2f}%",
+                    'fit_status': fit_status,
+                    'note': 'fallback parameters used'
+                }
 
     return jsonify(results)
-'''
 
+"""
 @app.route('/grid_search')
 def grid_search():
-    global X_train_scaled, y_train, LR_model, DT_model, XGB_model, param_grids
+    global X_train_scaled, X_test_scaled, y_train, y_test, LR_model, DT_model, XGB_model, param_grids
+    
+    if X_train_scaled is None or X_test_scaled is None:
+        return jsonify({"message": "Data not scaled. Please normalize data first."})
 
-    results = {}  
+    results = {}
 
     ordered_models = [
         ('Logistic Regression', LR_model),
@@ -431,20 +556,35 @@ def grid_search():
         if not param_grid:
             continue
 
-        grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, scoring='accuracy', n_jobs=-1)
-        grid_search.fit(X_train_scaled, y_train)
+        grid = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+        grid.fit(X_train_scaled, y_train)
 
-        best_params = grid_search.best_params_
-        best_score = grid_search.best_score_
+        best_model = grid.best_estimator_
 
-        best_score_percent = "{:.2f}".format(best_score * 100)
+        # Dapatkan akurasi training dan testing
+        train_acc = best_model.score(X_train_scaled, y_train)
+        test_acc = best_model.score(X_test_scaled, y_test)
+        gap = abs(train_acc - test_acc) * 100
+
+        # Tentukan status fit
+        if train_acc < 0.8 and test_acc < 0.8 and gap < 5:
+            status = "Underfitting ❄️"
+        elif train_acc >= 0.95 and test_acc <= 0.9 and gap > 5:
+            status = "Overfitting 🔥"
+        else:
+            status = "Good Fit ✅"
 
         results[model_name] = {
-            'best_params': best_params,
-            'best_score': f"{best_score_percent}%"
+            'best_params': grid.best_params_,
+            'train_accuracy': f"{train_acc*100:.2f}%",
+            'test_accuracy': f"{test_acc*100:.2f}%",
+            'gap': f"{gap:.2f}%",
+            'fit_status': status
         }
 
     return Response(json.dumps(results), mimetype='application/json')
+"""
+
 
 @app.route('/tuning')
 def tuning_page():     
@@ -466,18 +606,28 @@ def train_logistic_regression():
     if X_train is None or X_test is None:
         return jsonify(
             {"message": "Data not split yet. Please split the data first before Logistic Regression training."})
+    
+    if X_train.select_dtypes(include=['object', 'category']).shape[1] > 0:
+        return jsonify(
+            {"message": "Data still contains object(words). Please change data type first."})
 
     X_train_data = X_train_scaled if X_train_scaled is not None else X_train
 
     C = tuned_params.get('Logistic Regression', {}).get('C')
+    penalty = tuned_params.get('Logistic Regression', {}).get('penalty')
     solver = tuned_params.get('Logistic Regression', {}).get('solver')
-
+    l1_ratio = tuned_params.get('Logistic Regression', {}).get('l1_ratio')
+    
     lr_params = {}
 
     if C is not None:
         lr_params['C'] = C
+    if penalty is not None:
+        lr_params['penalty'] = penalty
     if solver is not None:
         lr_params['solver'] = solver
+    if l1_ratio is not None:
+        lr_params['l1_ratio'] = l1_ratio   
 
     LR_model = LogisticRegression(**lr_params)
 
@@ -503,12 +653,17 @@ def train_decision_tree():
     if X_train is None or X_test is None:
         return jsonify(
             {"message": "Data not split yet. Please split the data first before Decision Tree training."})
+    
+    if X_train.select_dtypes(include=['object', 'category']).shape[1] > 0:
+        return jsonify(
+            {"message": "Data still contains object(words). Please change data type first."})
 
     X_train_data = X_train_scaled if X_train_scaled is not None else X_train
 
     max_depth = tuned_params.get('Decision Tree', {}).get('max_depth')
     min_samples_split = tuned_params.get('Decision Tree', {}).get('min_samples_split')
     min_samples_leaf = tuned_params.get('Decision Tree', {}).get('min_samples_leaf')
+    ccp_alpha = tuned_params.get('Decision Tree', {}).get('ccp_alpha')
 
     dt_params = {}
 
@@ -518,6 +673,8 @@ def train_decision_tree():
         dt_params['min_samples_split'] = min_samples_split
     if min_samples_leaf is not None:
         dt_params['min_samples_leaf'] = min_samples_leaf
+    if ccp_alpha is not None:
+        dt_params['ccp_alpha'] = ccp_alpha
 
     DT_model = DecisionTreeClassifier(**dt_params)
 
@@ -543,18 +700,37 @@ def train_xgboost():
     if X_train is None or X_test is None:
         return jsonify(
             {"message": "Data not split yet. Please split the data first before XGBoost training."})
+    
+    if X_train.select_dtypes(include=['object', 'category']).shape[1] > 0:
+        return jsonify(
+            {"message": "Data still contains object(words). Please change data type first."})
 
     X_train_data = X_train_scaled if X_train_scaled is not None else X_train
 
+    max_depth = tuned_params.get('XGBoost', {}).get('max_depth')
     learning_rate = tuned_params.get('XGBoost', {}).get('learning_rate')
     n_estimators = tuned_params.get('XGBoost', {}).get('n_estimators')
+    subsample = tuned_params.get('XGBoost', {}).get('subsample')
+    colsample_bytree = tuned_params.get('XGBoost', {}).get('colsample_bytree')
+    reg_alpha = tuned_params.get('XGBoost', {}).get('reg_alpha')
+    reg_lambda = tuned_params.get('XGBoost', {}).get('reg_lambda')
 
     xgb_params = {}
 
+    if max_depth is not None:
+        xgb_params['max_depth'] = max_depth
     if learning_rate is not None:
         xgb_params['learning_rate'] = learning_rate
     if n_estimators is not None:
         xgb_params['n_estimators'] = n_estimators
+    if subsample is not None:
+        xgb_params['subsample'] = subsample
+    if colsample_bytree is not None:
+        xgb_params['colsample_bytree'] = colsample_bytree
+    if reg_alpha is not None:
+        xgb_params['reg_alpha'] = reg_alpha
+    if reg_lambda is not None:
+        xgb_params['reg_lambda'] = reg_lambda
 
     XGB_model = XGBClassifier(**xgb_params)
 
@@ -576,7 +752,7 @@ def train_xgboost():
 
 @app.route('/view_model_results')
 def view_model_results():
-    global LR_model, DT_model, XGB_model, X_train, X_test, y_test, X_test_scaled, LR_train_duration, DT_train_duration, XGB_train_duration, X_test_data, LR_y_pred, DT_y_pred, XGB_y_pred
+    global LR_model, DT_model, XGB_model, X_train, X_test, y_test, y_train, X_test_scaled, X_train_scaled, LR_train_duration, DT_train_duration, XGB_train_duration, X_test_data, LR_y_pred, DT_y_pred, XGB_y_pred
 
     if X_train is None or X_test is None:
         return jsonify(
@@ -587,11 +763,20 @@ def view_model_results():
         return jsonify({"message": "models have not been trained yet."})
 
     X_test_data = X_test_scaled if X_test_scaled is not None else X_test
+    X_train_data = X_train_scaled if X_train_scaled is not None else X_train
+
     
 
     LR_y_pred = LR_model.predict(X_test_data)
     LR_accuracy = accuracy_score(y_test, LR_y_pred)
     LR_accuracy_percent = "{:.2f}%".format(LR_accuracy * 100)
+    LR_y_train_pred = LR_model.predict(X_train_data)
+    LR_train_accuracy = accuracy_score(y_train, LR_y_train_pred)
+    LR_train_accuracy_percent = "{:.2f}%".format(LR_train_accuracy * 100)
+    LR_train_percent = LR_train_accuracy * 100
+    LR_test_percent = LR_accuracy * 100
+    LR_gap = LR_train_percent - LR_test_percent
+    LR_gap_percent = "{:.2f}%".format(LR_gap)
     LR_recall = recall_score(y_test, LR_y_pred, average='weighted')
     LR_recall_percent = "{:.2f}%".format(LR_recall * 100)
     LR_precision = precision_score(y_test, LR_y_pred, average='weighted')
@@ -612,6 +797,13 @@ def view_model_results():
     DT_y_pred = DT_model.predict(X_test_data)
     DT_accuracy = accuracy_score(y_test, DT_y_pred)
     DT_accuracy_percent = "{:.2f}%".format(DT_accuracy * 100)
+    DT_y_train_pred = DT_model.predict(X_train_data)
+    DT_train_accuracy = accuracy_score(y_train, DT_y_train_pred)
+    DT_train_accuracy_percent = "{:.2f}%".format(DT_train_accuracy * 100)
+    DT_train_percent = DT_train_accuracy * 100
+    DT_test_percent = DT_accuracy * 100
+    DT_gap = DT_train_percent - DT_test_percent
+    DT_gap_percent = "{:.2f}%".format(DT_gap)
     DT_recall = recall_score(y_test, DT_y_pred, average='weighted')
     DT_recall_percent = "{:.2f}%".format(DT_recall * 100)
     DT_precision = precision_score(y_test, DT_y_pred, average='weighted')
@@ -632,6 +824,13 @@ def view_model_results():
     XGB_y_pred = XGB_model.predict(X_test_data)
     XGB_accuracy = accuracy_score(y_test, XGB_y_pred)
     XGB_accuracy_percent = "{:.2f}%".format(XGB_accuracy * 100)
+    XGB_y_train_pred = XGB_model.predict(X_train_data)
+    XGB_train_accuracy = accuracy_score(y_train, XGB_y_train_pred)
+    XGB_train_accuracy_percent = "{:.2f}%".format(XGB_train_accuracy * 100)
+    XGB_train_percent = XGB_train_accuracy * 100
+    XGB_test_percent = XGB_accuracy * 100
+    XGB_gap = XGB_train_percent - XGB_test_percent
+    XGB_gap_percent = "{:.2f}%".format(XGB_gap)
     XGB_recall = recall_score(y_test, XGB_y_pred, average='weighted')
     XGB_recall_percent = "{:.2f}%".format(XGB_recall * 100)
     XGB_precision = precision_score(y_test, XGB_y_pred, average='weighted')
@@ -656,6 +855,38 @@ def view_model_results():
         "precision": "",
         "f1_score": ""
     }
+
+    
+    if LR_train_percent < 80 and LR_test_percent < 80 and abs(LR_gap) < 5:
+        LR_status = "Underfitting ❄️"
+    elif LR_train_percent > 95 and 90 <= LR_test_percent <= 95 and abs(LR_gap) > 5:
+        LR_status = "Overfitting 🔥"
+    elif LR_train_percent == 100:
+        LR_status = "Overfitting 🔥"
+    else:
+        LR_status = "Good Fit ✅"
+
+
+    if DT_train_percent < 80 and DT_test_percent < 80 and abs(DT_gap) < 5:
+        DT_status = "Underfitting ❄️"
+    elif DT_train_percent > 95 and 90 <= DT_test_percent <= 95 and abs(DT_gap) > 5:
+        DT_status = "Overfitting 🔥"
+    elif DT_train_percent == 100:
+        DT_status = "Overfitting 🔥"
+    else:
+        DT_status = "Good Fit ✅"
+
+    
+    if XGB_train_percent < 80 and XGB_test_percent < 80 and abs(XGB_gap) < 5:
+        XGB_status = "Underfitting ❄️"
+    elif XGB_train_percent > 95 and 90 <= XGB_test_percent <= 95 and abs(XGB_gap) > 5:
+        XGB_status = "Overfitting 🔥"
+    elif XGB_train_percent == 100:
+        XGB_status = "Overfitting 🔥"
+    else:
+        XGB_status = "Good Fit ✅"
+
+
 
     if LR_accuracy_percent > DT_accuracy_percent and LR_accuracy_percent > XGB_accuracy_percent:
         conclusions["accuracy"] = "Logistic Regression"
@@ -753,7 +984,10 @@ def view_model_results():
             <div class="model-section">
                 <h2 style="margin-bottom:20px;">Logistic Regression</h2>
                 <p><strong>Training Duration:</strong> {LR_train_duration:.2f} seconds</p>
-                <p><strong>Accuracy:</strong> {LR_accuracy_percent}</p>
+                <p><strong>Test Accuracy:</strong> {LR_accuracy_percent}</p>
+                <p><strong>Train Accuracy:</strong> {LR_train_accuracy_percent}</p>
+                <p><strong>Gap:</strong> {LR_gap_percent}</p>
+                <p><strong>Status Pelatihan Model:</strong> {LR_status}</p>
                 <p><strong>Recall:</strong> {LR_recall_percent}</p>
                 <p><strong>Precision:</strong> {LR_precision_percent}</p>
                 <p><strong>F1 Score:</strong> {LR_f1_percent}</p>
@@ -772,7 +1006,10 @@ def view_model_results():
             <div class="model-section">
                 <h2 style="margin-bottom:20px;">Decision Tree</h2>
                 <p><strong>Training Duration:</strong> {DT_train_duration:.2f} seconds</p>
-                <p><strong>Accuracy:</strong> {DT_accuracy_percent}</p>
+                <p><strong>Test Accuracy:</strong> {DT_accuracy_percent}</p>
+                <p><strong>Train Accuracy:</strong> {DT_train_accuracy_percent}</p>
+                <p><strong>Gap:</strong> {DT_gap_percent}</p>
+                <p><strong>Status Pelatihan Model:</strong> {DT_status}</p>
                 <p><strong>Recall:</strong> {DT_recall_percent}</p>
                 <p><strong>Precision:</strong> {DT_precision_percent}</p>
                 <p><strong>F1 Score:</strong> {DT_f1_percent}</p>
@@ -789,7 +1026,10 @@ def view_model_results():
             <div class="model-section">
                 <h2 style="margin-bottom:20px;">XGBoost</h2>
                 <p><strong>Training Duration:</strong> {XGB_train_duration:.2f} seconds</p>
-                <p><strong>Accuracy:</strong> {XGB_accuracy_percent}</p>
+                <p><strong>Test Accuracy:</strong> {XGB_accuracy_percent}</p>
+                <p><strong>Train Accuracy:</strong> {XGB_train_accuracy_percent}</p>
+                <p><strong>Gap:</strong> {XGB_gap_percent}</p>
+                <p><strong>Status Pelatihan Model:</strong> {XGB_status}</p>
                 <p><strong>Recall:</strong> {XGB_recall_percent}</p>
                 <p><strong>Precision:</strong> {XGB_precision_percent}</p>
                 <p><strong>F1 Score:</strong> {XGB_f1_percent}</p>
@@ -836,7 +1076,90 @@ def view_model_results():
     return jsonify({"message": result_string})
 
 
-@app.route('/view_shap')
+@app.route('/view_shap_lr')
+def view_shap_lr():
+    global LR_model, X_test, X_train
+
+    if LR_model is None or X_test is None or X_train is None:
+        return jsonify({"message": "Model or test data not available."})
+
+    feature_names = X_test.columns.tolist()
+
+    # SHAP explainer untuk model linear
+    explainer = shap.Explainer(LR_model, X_train)
+    shap_values = explainer(X_test)
+
+    # Buat summary plot
+    fig = plt.figure()
+    shap.summary_plot(shap_values, features=X_test, feature_names=feature_names, show=False)
+    plt.title("SHAP Summary Plot for Logistic Regression")
+
+    buf = BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+    image_base64 = base64.b64encode(buf.read()).decode('utf-8')
+    buf.close()
+
+    result_string = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>SHAP Summary Plot - LR</title>
+    </head>
+    <body>
+        <h2>SHAP Summary Plot for Logistic Regression</h2>
+        <img src="data:image/png;base64,{image_base64}" alt="SHAP Summary Plot">
+    </body>
+    </html>
+    """
+
+    return jsonify({"message": result_string})
+
+
+@app.route('/view_shap_dt')
+def view_shap_dt():
+    global DT_model, X_test
+
+    if DT_model is None or X_test is None:
+        return jsonify({"message": "Model or test data not available."})
+
+    feature_names = X_test.columns.tolist()
+
+    # SHAP explainer untuk decision tree
+    explainer = shap.TreeExplainer(DT_model)
+    shap_values = explainer.shap_values(X_test)
+
+
+    # Buat figure yang lebih besar agar tidak dempet
+    fig, ax = plt.subplots(figsize=(50, 60))
+    shap.summary_plot(shap_values, X_test, feature_names=feature_names, plot_type="bar", show=False)
+
+    # Simpan ke buffer
+    buf = BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+    image_base64 = base64.b64encode(buf.read()).decode('utf-8')
+    buf.close()
+    plt.close()
+
+    result_string = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>SHAP Summary Plot - DT</title>
+    </head>
+    <body style="background-color:#f5f5f5;">
+        <h2 style="font-family:sans-serif;">SHAP Summary Plot for Decision Tree</h2>
+        <img src="data:image/png;base64,{image_base64}" alt="SHAP Summary Plot" style="max-width:100%; height:auto;">
+    </body>
+    </html>
+    """
+
+    return jsonify({"message": result_string})
+
+
+
+@app.route('/view_shap_xgb')
 def view_shap():
     global XGB_model, X_test, X_test_scaled
 
@@ -854,7 +1177,7 @@ def view_shap():
     # Create a summary plot
     fig, ax = plt.subplots()
     shap.summary_plot(shap_values, features=X_test_scaled,                     
-    feature_names=feature_names, plot_type="bar")
+        feature_names=feature_names, plot_type="dot")
     plt.title("SHAP Summary Plot for XGBoost")
 
     buf = BytesIO()

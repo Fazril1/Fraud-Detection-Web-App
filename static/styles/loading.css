@@ -99,6 +99,16 @@
     font-size: 30px;
 }
 
+#loadingremoveredundancyfeature {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 39%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
 #loadingremovecolumn {
     display: none;
     position: fixed;
@@ -129,6 +139,7 @@
     font-size: 30px;
 }
 
+
 #loadingnormalize {
     display: none;
     position: fixed;
@@ -139,7 +150,7 @@
     font-size: 30px;
 }
 
-/*
+
 #loadingrandomsearch {
     display: none;
     position: fixed;
@@ -149,8 +160,8 @@
     z-index: 1000;
     font-size: 30px;
 }
-*/
 
+/*
 #loadinggridsearch {
     display: none;
     position: fixed;
@@ -160,6 +171,7 @@
     z-index: 1000;
     font-size: 30px;
 }
+*/
 
 #loadingtuning {
     display: none;
@@ -211,7 +223,27 @@
     font-size: 30px;
 }
 
-#loadingviewshap {
+#loadingviewshaplr {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingviewshapdt {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    font-size: 30px;
+}
+
+#loadingviewshapxgb {
     display: none;
     position: fixed;
     top: 10%;

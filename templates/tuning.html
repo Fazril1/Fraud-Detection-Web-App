@@ -75,34 +75,74 @@
         <div id="C-error" class="error-message">Invalid C value.</div>
     </div>
     <div class="input-container">
+        <label for="penalty">Penalty for Logistic Regression:</label>
+        <input type="text" id="penalty">
+        <div id="penalty-error" class="error-message">Invalid penalty value.</div>
+    </div>
+    <div class="input-container">
         <label for="solver">Solver for Logistic Regression:</label>
         <input type="text" id="solver">
         <div id="solver-error" class="error-message">Invalid solver value.</div>
     </div>
     <div class="input-container">
-        <label for="max_depth">max_depth for Decision Tree:</label>
+        <label for="l1_ratio">L1_ratio for Logistic Regression:</label>
+        <input type="text" id="l1_ratio">
+        <div id="l1_ratio-error" class="error-message">Invalid l1_ratio value.</div>
+    </div>
+    <div class="input-container">
+        <label for="max_depth">max depth for Decision Tree:</label>
         <input type="text" id="max_depth">
-        <div id="max_depth-error" class="error-message">Invalid max_depth value.</div>
+        <div id="max_depth-error" class="error-message">Invalid max depth value.</div>
     </div>
     <div class="input-container">
-        <label for="min_samples_leaf">min_samples_leaf for Decision Tree:</label>
-        <input type="text" id="min_samples_leaf">
-        <div id="min_samples_leaf-error" class="error-message">Invalid min_samples_leaf value.</div>
-    </div>
-    <div class="input-container">
-        <label for="min_samples_split">min_samples_split for Decision Tree:</label>
+        <label for="min_samples_split">min samples split for Decision Tree:</label>
         <input type="text" id="min_samples_split">
-        <div id="min_samples_split-error" class="error-message">Invalid min_samples_split value.</div>
+        <div id="min_samples_split-error" class="error-message">Invalid min samples split value.</div>
     </div>
     <div class="input-container">
-        <label for="learning_rate">learning_rate for XGBoost:</label>
+        <label for="min_samples_leaf">min samples leaf for Decision Tree:</label>
+        <input type="text" id="min_samples_leaf">
+        <div id="min_samples_leaf-error" class="error-message">Invalid min samples leaf value.</div>
+    </div>
+    <div class="input-container">
+        <label for="ccp_alpha">ccp alpha for Decision Tree:</label>
+        <input type="text" id="ccp_alpha">
+        <div id="ccp_alpha-error" class="error-message">Invalid ccp alpha value.</div>
+    </div>
+    <div class="input-container">
+        <label for="max_depth">max depth for XGBoost:</label>
+        <input type="text" id="max_depth">
+        <div id="max_depth-error" class="error-message">Invalid max depth value.</div>
+    </div>
+    <div class="input-container">
+        <label for="learning_rate">learning rate for XGBoost:</label>
         <input type="text" id="learning_rate">
-        <div id="learning_rate-error" class="error-message">Invalid learning_rate value.</div>
+        <div id="learning_rate-error" class="error-message">Invalid learning rate value.</div>
     </div>
     <div class="input-container">
-        <label for="n_estimators">n_estimators for XGBoost:</label>
+        <label for="n_estimators">n estimators for XGBoost:</label>
         <input type="text" id="n_estimators">
-        <div id="n_estimators-error" class="error-message">Invalid n_estimators value.</div>
+        <div id="n_estimators-error" class="error-message">Invalid n estimators value.</div>
+    </div>
+    <div class="input-container">
+        <label for="subsample">subsample for XGBoost:</label>
+        <input type="text" id="subsample">
+        <div id="subsample-error" class="error-message">Invalid subsample value.</div>
+    </div>
+    <div class="input-container">
+        <label for="colsample_bytree">colsample bytree for XGBoost:</label>
+        <input type="text" id="colsample_bytree">
+        <div id="colsample_bytree-error" class="error-message">Invalid colsample bytree value.</div>
+    </div>
+    <div class="input-container">
+        <label for="reg_alpha">reg alpha for XGBoost:</label>
+        <input type="text" id="reg_alpha">
+        <div id="reg_alpha-error" class="error-message">Invalid reg alpha value.</div>
+    </div>
+    <div class="input-container">
+        <label for="reg_lambda">reg lambda for XGBoost:</label>
+        <input type="text" id="reg_lambda">
+        <div id="reg_lambda-error" class="error-message">Invalid reg lambda value.</div>
     </div>
     <button id="setTuningParamsBtn">Set Tuning Parameters</button>
     <div id="message" class="success-message"></div>
@@ -116,19 +156,27 @@
         <ul>
             <li><strong>Logistic Regression:</strong></li>
             <ul>
-                <li><strong>C:</strong> Number value > 0 (e.g., 0.1, 1, 10)</li>
-                <li><strong>solver:</strong> 'liblinear', 'lbfgs'</li>
+                <li><strong>C:</strong> Number value >= 10 (Decimal not allowed) (e.g., 10, 50, 100)</li>
+                <li><strong>penalty:</strong> 'elasticnet'</li>
+                <li><strong>solver:</strong> 'saga'</li>
+                <li><strong>l1_ratio:</strong> Number value >= 0.0 (e.g., 0.0, 0.5, 1.0)</li>
             </ul>
             <li><strong>Decision Tree:</strong></li>
             <ul>
-                <li><strong>max_depth:</strong> Number value >= 1 (Decimal not allowed) (e.g., None, 10, 20)</li>
-                <li><strong>min_samples_leaf:</strong> Number value >= 1 (Decimal not allowed) (e.g., 1, 2, 5)</li>
-                <li><strong>min_samples_split:</strong> Number value >= 2 (Decimal not allowed) (e.g., 2, 5, 10)</li>
+                <li><strong>max_depth:</strong> Number value >= 5 (Decimal not allowed) (e.g., 5, 8, 10)</li>
+                <li><strong>min_samples_leaf:</strong> Number value >= 10 (Decimal not allowed) (e.g., 10, 30, 50)</li>
+                <li><strong>min_samples_split:</strong> Number value >= 5 (Decimal not allowed) (e.g., 5, 10, 20)</li>
+                <li><strong>ccp_alpha:</strong> Number value > 0 (e.g., 0.01, 0.05, 0.1)</li>
             </ul>
             <li><strong>XGBoost:</strong></li>
             <ul>
-                <li><strong>learning_rate:</strong> Number value > 0 (e.g., 0.01, 0.1, 0.2)</li>
-                <li><strong>n_estimators:</strong> Number value >= 1 (Decimal not allowed) (e.g., 50, 100, 200)</li>
+                <li><strong>max_depth:</strong> Number value >= 3 (Decimal not allowed) (e.g., 3, 4, 5, 6)</li>
+                <li><strong>learning_rate:</strong> Number value > 0 (e.g., 0.01, 0.05, 0.1)</li>
+                <li><strong>n_estimators:</strong> Number value >= 100 (Decimal not allowed) (e.g., 100, 200, 300)</li>
+                <li><strong>subsample:</strong> Number value > 0 (e.g., 0.5, 0.6, 0.7, 0.8)</li>
+                <li><strong>colsample_bytree:</strong> Number value > 0 (e.g., 0.5, 0.6, 0.7, 0.8)</li>
+                <li><strong>reg_alpha:</strong> Number value > 0  (e.g., 0.1, 0.5, 1)</li>
+                <li><strong>reg_lambda:</strong> Number value >= 1 (Decimal not allowed) (e.g., 1, 5, 10)</li>
             </ul>
         </ul>
     </div>
@@ -174,53 +222,114 @@
             const params = {
                 logistic_regression: {
                     C: parseFloat(document.getElementById('C').value), 
-                    solver: document.getElementById('solver').value
+                    penalty: document.getElementById('penalty').value,
+                    solver: document.getElementById('solver').value,
+                    l1_ratio: parseFloat(document.getElementById('l1_ratio').value)
                 },
                 decision_tree: {
                     max_depth: parseInt(document.getElementById('max_depth').value),
                     min_samples_leaf: parseInt(document.getElementById('min_samples_leaf').value),
-                    min_samples_split: parseInt(document.getElementById('min_samples_split').value) 
+                    min_samples_split: parseInt(document.getElementById('min_samples_split').value),
+                    ccp_alpha: parseFloat(document.getElementById('ccp_alpha').value)
                 },
                 xgboost: {
+                    max_depth: parseInt(document.getElementById('max_depth').value),
                     learning_rate: parseFloat(document.getElementById('learning_rate').value), 
-                    n_estimators: parseInt(document.getElementById('n_estimators').value)
+                    n_estimators: parseInt(document.getElementById('n_estimators').value),
+                    subsample: parseFloat(document.getElementById('subsample').value), 
+                    colsample_bytree: parseFloat(document.getElementById('colsample_bytree').value), 
+                    reg_alpha: parseFloat(document.getElementById('reg_alpha').value), 
+                    reg_lambda: parseInt(document.getElementById('reg_lambda').value)
                 }
             };
 
+            function validateInteger(value, allowedValues = null) {
+                const parsed = parseInt(value);
+                if (isNaN(parsed)) return false;
+                if (allowedValues && !allowedValues.includes(parsed)) return false;
+                return true;
+            }
+
+            function validateNumeric(value, allowedValues = null) {
+                const parsed = parseFloat(value);
+                if (isNaN(parsed)) return false;
+                if (allowedValues && !allowedValues.includes(parsed)) return false;
+                return true;
+            }
+
+
             let isValid = true;
 
-            if (!validateNumeric(params.logistic_regression.C)) {
-                showErrorMessage('C-error', 'Invalid C value. Please input a positive number.');
+            if (!validateInteger(params.logistic_regression.C, [10, 50, 100])) {
+                showErrorMessage('C-error', "Invalid C value. Please input '10', '50', or '100'.");
                 isValid = false;
             }
 
-            if (params.logistic_regression.solver !== 'liblinear' && params.logistic_regression.solver !== 'lbfgs') {
-                showErrorMessage('solver-error', "Invalid solver value. Please input 'liblinear' or 'lbfgs'.");
+            if (params.logistic_regression.penalty !== 'elasticnet') {
+                showErrorMessage('penalty-error', "Invalid penalty value. Please input 'elasticnet'.");
                 isValid = false;
             }
 
-            if (params.decision_tree.max_depth !== 'None' && !validateInteger(params.decision_tree.max_depth, 1)) {
-                showErrorMessage('max_depth-error', 'Invalid max_depth value. Please input a None or a positive integer.');
+            if (params.logistic_regression.solver !== 'saga') {
+                showErrorMessage('solver-error', "Invalid solver value. Please input 'saga'.");
+                isValid = false;
+            }
+            if (!validateNumeric(params.logistic_regression.l1_ratio, [0.0, 0.5, 1.0])) {
+                showErrorMessage('l1_ratio-error', "Invalid l1_ratio value. Please input '0.0', '0.5', or '1.0'.");
+                isValid = false;
+            }
+            if (!validateInteger(params.decision_tree.max_depth, [5, 8, 10])) {
+                showErrorMessage('max_depth-error', "Invalid max_depth value. Please input '5', '8', or '10'.");
                 isValid = false;
             }
 
-            if (!validateInteger(params.decision_tree.min_samples_leaf, 1)) {
-                showErrorMessage('min_samples_leaf-error', 'Invalid min_samples_leaf value. Please input an integer greater than or equal to 2.');
+            if (!validateInteger(params.decision_tree.min_samples_split, [10, 30, 50])) {
+                showErrorMessage('min_samples_split-error', "Invalid min_samples_split value. Please input '10', '30', or '50'.");
                 isValid = false;
             }
 
-            if (!validateInteger(params.decision_tree.min_samples_split, 2)) {
-                showErrorMessage('min_samples_split-error', 'Invalid min_samples_split value. Please input an integer greater than or equal to 2.');
+            if (!validateInteger(params.decision_tree.min_samples_leaf, [5, 10, 20])) {
+                showErrorMessage('min_samples_leaf-error', "Invalid min_samples_leaf value. Please input '5', '10', or '20'.");
                 isValid = false;
             }
 
-            if (!validateNumeric(params.xgboost.learning_rate)) {
-                showErrorMessage('learning_rate-error', 'Invalid learning_rate value. Please input a positive number.');
+            if (!validateNumeric(params.decision_tree.ccp_alpha, [0.01, 0.05, 0.1])) {
+                showErrorMessage('ccp_alpha-error', "Invalid ccp_alpha value. Please input '0.01', '0.05', or '0.1'.");
                 isValid = false;
             }
 
-            if (!validateInteger(params.xgboost.n_estimators, 1)) {
-                showErrorMessage('n_estimators-error', 'Invalid n_estimators value. Please input a positive integer.');
+            if (!validateInteger(params.xgboost.max_depth, [3, 4, 5, 10])) {
+                showErrorMessage('max_depth-error', "Invalid max_depth value. Please input '3', '4', '5', or '10'.");
+                isValid = false;
+            }
+
+            if (!validateNumeric(params.xgboost.learning_rate, [0.01, 0.05, 0.1])) {
+                showErrorMessage('learning_rate-error', "Invalid learning_rate value. Please input '0.01', '0.05', or '0.1'.");
+                isValid = false;
+            }
+
+            if (!validateInteger(params.xgboost.n_estimators, [100, 200, 300])) {
+                showErrorMessage('n_estimators-error', "Invalid n_estimators value. Please input '100', '200', or '300'.");
+                isValid = false;
+            }
+
+            if (!validateNumeric(params.xgboost.subsample, [0.5, 0.6, 0.7, 0.8])) {
+                showErrorMessage('subsample-error', "Invalid subsample value. Please input '0.5', '0.6', '0.7', or '0.8'.");
+                isValid = false;
+            }
+
+            if (!validateNumeric(params.xgboost.colsample_bytree, [0.5, 0.6, 0.7, 0.8])) {
+                showErrorMessage('colsample_bytree-error', "Invalid colsample_bytree value. Please input '0.5', '0.6', '0.7', or '0.8'.");
+                isValid = false;
+            }
+
+            if (!validateNumeric(params.xgboost.reg_alpha, [0.1, 0.5, 1])) {
+                showErrorMessage('reg_alpha-error', "Invalid reg_alpha value. Please input '0.1', '0.5', or '1'.");
+                isValid = false;
+            }
+
+            if (!validateInteger(params.xgboost.reg_lambda, [1, 5, 10])) {
+                showErrorMessage('reg_lambda-error', "Invalid reg_lambda value. Please input '1', '5', or '10'.");
                 isValid = false;
             }
 
