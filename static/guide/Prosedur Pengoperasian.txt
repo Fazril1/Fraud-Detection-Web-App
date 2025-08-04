@@ -48,18 +48,8 @@ overfitting: - akurasi latih mencapai 100%
 
 17. Menu View Result digunakan untuk melihat hasil akurasi dari tiap metode yang dipakai.
 
-18. Menu View Shap LR digunakan untuk melihat fitur mana yang berpengaruh ke prediksi ditandai dengan:
-	Nilai negatif berwarna biru = beberapa data dari fitur tersebut mempunyai nilai yang rendah dan juga menurunkan prediksi dari model
-	Nilai negatif berwarna merah = beberapa data dari fitur tersebut mempunyai nilai yang tinggi tapi menurunkan prediksi dari model
-	Nilai positif berwarna biru = beberapa data dari fitur tersebut mempunyai nilai yang rendah tapi menaikkan prediksi dari model
-	Nilai positif berwarna merah = beberapa data dari fitur tersebut mempunyai nilai yang tinggi dan juga menaikkan prediksi dari model
+18. Menu Download LR Predicted Model Dataset digunakan untuk membandingkan hasil prediksi dengan dataset yang diinput di awal.
 
-19. Menu View Shap DT digunakan untuk melihat fitur mana yang berpengaruh ke prediksi, kemungkinan hanya terdapat sedikit fitur yang ditampilkan karena sifat Decision Tree itu sendiri yang hanya memakai satu pohon keputusan dan bukan seperti XGBoost yang memakai banyak pohon keputusan, dan untuk pembacaan grafik sama seperti shap LR.
+19. Menu Download DT Predicted Model Dataset membandingkan hasil prediksi dengan dataset yang diinput di awal.
 
-20. Menu View Shap XGB digunakan untuk melihat fitur mana yang berpengaruh ke prediksi, pembacaan grafik sama seperti shap LR.
-
-21. Menu Download LR Predicted Model Dataset digunakan untuk membandingkan hasil prediksi dengan dataset yang diinput di awal.
-
-22. Menu Download DT Predicted Model Dataset membandingkan hasil prediksi dengan dataset yang diinput di awal.
-
-23. Menu Download XGB Predicted Model Dataset membandingkan hasil prediksi dengan dataset yang diinput di awal.
+20. Menu Download XGB Predicted Model Dataset membandingkan hasil prediksi dengan dataset yang diinput di awal.

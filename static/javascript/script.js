@@ -257,38 +257,33 @@ $(document).ready(function() {
       $('#loadingxgb').hide();
       });
     });
-    
-   $('#viewModelResultBtn').click(function() {
-      $('#loadingviewresult').show();
-    $.get('/view_model_results', function(response) {
-      $('#content').html(response.message);
-      $('#loadingviewresult').hide();
-      });
-   });
-     
-    $('#viewShapBtnLr').click(function() {
-      $('#loadingviewshaplr').show();
-    $.get('/view_shap_lr', function(response) {
-      $('#content').html(response.message);
-      $('#loadingviewshaplr').hide();
-      });
-    });
 
-    $('#viewShapBtnDt').click(function() {
-      $('#loadingviewshapdt').show();
-    $.get('/view_shap_dt', function(response) {
-      $('#content').html(response.message);
-      $('#loadingviewshapdt').hide();
+    /*
+    $('#uploadTrainModelBtn').click(function() {
+      $('#loadinguploadtrainmodel').show();
+      window.location.href = '/upload_model';
+      $('#loadinguploadtrainmodel').hide();
       });
-    });
+      */
 
-    $('#viewShapBtnXgb').click(function() {
-      $('#loadingviewshapxgb').show();
-    $.get('/view_shap_xgb', function(response) {
-      $('#content').html(response.message);
-      $('#loadingviewshapxgb').hide();
-      });
-    });  
+
+  $('#viewModelResultBtn').click(function () {
+    $('#loadingviewresult').show();
+
+    $.ajax({
+      url: '/view_model_results',
+      method: 'GET',
+      success: function (response) {
+        $('#content').html(response.message);
+        $('#loadingviewresult').hide();
+      },
+      error: function (xhr) {
+        $('#loadingviewresult').hide();
+        const errorMsg = xhr.responseJSON?.message || "There's an error while processing the model result.";
+        alert("Gagal: " + errorMsg);
+      }
+  });
+});  
 
     $('#downloadLrPredictedModelBtn').click(function() {
       $('#loadingdownloadlrpredictedmodel').show();

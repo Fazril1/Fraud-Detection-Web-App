@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns  
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
-#from scipy.stats import uniform, randint
 from xgboost import XGBClassifier  
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier 
@@ -19,9 +18,10 @@ import base64
 from datetime import datetime
 from tabulate import tabulate
 from time import time
-import shap
 from io import BytesIO
 import matplotlib
+import joblib
+import shutil
 
 matplotlib.use('agg')
 
@@ -32,20 +32,18 @@ app = Flask(__name__,
             static_folder=static_folder)
 
 
-uploaded_df = None  
-X = None
-y = None
-X_train_data = None
-X_train = None
-X_test = None
-y_train = None
-y_test = None
-X_train_scaled = None
-X_test_scaled = None
-LR_train_duration = None
-DT_train_duration = None
-XGB_train_duration = None
-X_test_data = None
+uploaded_df = X = y = None
+
+X_train = X_test = y_train = y_test = None
+
+X_train_scaled = X_test_scaled = X_train_data = X_test_data = None
+
+LR_model = DT_model = XGB_model = None
+
+LR_train_duration = DT_train_duration = XGB_train_duration = None
+
+Model = os.path.join(os.path.expanduser("~"), "Downloads")
+os.makedirs(Model, exist_ok=True)
 
 
 param_grids = {
@@ -84,9 +82,11 @@ DT_model = DecisionTreeClassifier()
 
 XGB_model = XGBClassifier()
 
+"""
 @app.route('/')
 def home():
     return "Hello dari Render!"
+"""
 
 
 @app.route('/')
@@ -203,21 +203,6 @@ def check_numeric():
         return jsonify({"message": f"Failed to check the data: {str(e)}"})
 
 
-'''@app.route('/change_data_type')
-def change_data_type():
-    global uploaded_df
-
-    try:
-        # Melakukan one-hot encoding pada kolom-kolom dengan tipe 'object'
-        uploaded_df = pd.get_dummies(uploaded_df, columns=uploaded_df.select_dtypes(include=['object']).columns)
-
-        return jsonify({
-            "message": "Successfully applied One-Hot Encoding to string columns."
-        })
-    except Exception as e:
-        return jsonify({"message": f"Failed to apply One-Hot Encoding: {str(e)}"})'''
-
-
 @app.route('/change_data_type')
 def change_data_type():
     global uploaded_df
@@ -240,56 +225,6 @@ def change_data_type():
         return jsonify(
             {"message": f"Failed to apply Label Encoding: {str(e)}"})
     
-
-@app.route('/remove_redundancy_feature')
-def remove_redundancy_feature():
-    global uploaded_df
-
-    # Logging untuk memastikan route terpanggil
-    print("Endpoint /remove_redundancy_feature dipanggil.")
-
-    if uploaded_df is None:
-        return jsonify({"message": "Data belum diunggah. Silakan upload dataset terlebih dahulu."})
-
-    try:
-        # Pisahkan fitur dan target jika kolom 'Class' ada
-        if 'Class' in uploaded_df.columns:
-            target_series = uploaded_df['Class']
-            df_features_only = uploaded_df.drop(columns=['Class'])
-        else:
-            target_series = None
-            df_features_only = uploaded_df.copy()
-
-        # Hitung korelasi spearman antar fitur
-        corr_matrix = df_features_only.corr(method='spearman').abs()
-        upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
-
-        threshold = 0.9
-        to_drop = [column for column in upper.columns if any(upper[column] > threshold)]
-
-        if not to_drop:
-            return jsonify({"message": "Tidak ada fitur redundan yang ditemukan. Tidak ada kolom yang dihapus."})
-
-        # Drop kolom redundan
-        df_cleaned = df_features_only.drop(columns=to_drop)
-
-        # Tambahkan kembali kolom target jika sebelumnya ada
-        if target_series is not None:
-            df_cleaned['Class'] = target_series
-
-        # Update uploaded_df
-        uploaded_df = df_cleaned.copy()
-
-        return jsonify({
-            "message": f"{len(to_drop)} fitur dihapus karena korelasi tinggi (> {threshold}): {to_drop}",
-            "features_removed": to_drop,
-            "remaining_features": df_cleaned.columns.tolist()
-        })
-
-    except Exception as e:
-        print(f"Error saat menghapus fitur redundan: {e}")
-        return jsonify({"error": str(e)})
-
 
 def generate_correlation_heatmap(file_path):
     global uploaded_df
@@ -315,15 +250,12 @@ def generate_correlation_heatmap(file_path):
 @app.route('/download_correlation_matrix')
 def download_correlation_matrix():
     try:
-        # Simpan ke folder static
         static_folder = 'static'
         os.makedirs(static_folder, exist_ok=True)
         file_path = os.path.join(static_folder, 'correlation_matrix.png')
 
-        # Generate gambar heatmap
         generate_correlation_heatmap(file_path)
 
-        # Kirim file untuk diunduh
         return send_file(file_path,
                          mimetype='image/png',
                          as_attachment=True,
@@ -332,7 +264,45 @@ def download_correlation_matrix():
     except Exception as e:
         return jsonify({"message": f"Failed to generate or download the correlation matrix: {str(e)}"}), 500
 
+@app.route('/remove_redundancy_feature')
+def remove_redundancy_feature():
+    global uploaded_df
 
+    print("Endpoint called /remove_redundancy_feature.")
+
+    try:
+        if 'Class' in uploaded_df.columns:
+            target_series = uploaded_df['Class']
+            df_features_only = uploaded_df.drop(columns=['Class'])
+        else:
+            target_series = None
+            df_features_only = uploaded_df.copy()
+
+        corr_matrix = df_features_only.corr(method='spearman').abs()
+        upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+
+        threshold = 0.9
+        to_drop = [column for column in upper.columns if any(upper[column] > threshold)]
+
+        if not to_drop:
+            return jsonify({"message": "Redundancy feature not found. No columns are deleted."})
+
+        df_cleaned = df_features_only.drop(columns=to_drop)
+
+        if target_series is not None:
+            df_cleaned['Class'] = target_series
+
+        uploaded_df = df_cleaned.copy()
+
+        return jsonify({
+            "message": f"{len(to_drop)} features removed due to high correlation (> {threshold}): {to_drop}",
+            "features_removed": to_drop,
+            "remaining_features": df_cleaned.columns.tolist()
+        })
+
+    except Exception as e:
+        print(f"Error while removing redundant features: {e}")
+        return jsonify({"error": str(e)})
 
 @app.route('/remove_column')
 def remove_column():
@@ -367,7 +337,7 @@ def set_target():
 
 @app.route('/split_data')
 def split_data():
-    global X, y, X_train, X_test, y_train, y_test
+    global X, y, X_train, X_test, y_train, y_test, Model
 
     test_size_str = request.args.get('test_size')
     if test_size_str is None or not test_size_str.strip():
@@ -397,6 +367,10 @@ def split_data():
                                                         y,
                                                         test_size=test_size,
                                                         random_state=42)
+    
+    #split_path = os.path.join(Model, 'split_data.pkl')
+    #joblib.dump((X_train, X_test, y_train, y_test), split_path)
+
     return jsonify({
         "message":
         f"Data successfully split. Train size: {len(X_train)}, Test size: {len(X_test)}"
@@ -604,7 +578,7 @@ def set_tuning_params():
 
 @app.route('/train_logistic_regression')
 def train_logistic_regression():
-    global X_train, X_test, X_train_scaled, y_train, LR_model, LR_train_duration, tuned_params, X_train_data
+    global X_train, X_test, X_train_scaled, y_train, LR_model, LR_train_duration, tuned_params, X_train_data, Model
 
     if X_train is None or X_test is None:
         return jsonify(
@@ -637,6 +611,7 @@ def train_logistic_regression():
     start_time = time()  
 
     LR_model.fit(X_train_data, y_train)
+    joblib.dump(LR_model, os.path.join(Model, 'lr_model.pkl'))
 
     end_time = time()  
     train_duration = end_time - start_time  
@@ -651,7 +626,7 @@ def train_logistic_regression():
 
 @app.route('/train_decision_tree')
 def train_decision_tree():
-    global X_train, X_test, X_train_scaled, y_train, DT_model, DT_train_duration, tuned_params, X_train_data
+    global X_train, X_test, X_train_scaled, y_train, DT_model, DT_train_duration, tuned_params, X_train_data, Model
 
     if X_train is None or X_test is None:
         return jsonify(
@@ -684,6 +659,7 @@ def train_decision_tree():
     start_time = time()  
 
     DT_model.fit(X_train_data, y_train)
+    joblib.dump(DT_model, os.path.join(Model, 'dt_model.pkl'))
 
     end_time = time() 
     train_duration = end_time - start_time 
@@ -698,7 +674,7 @@ def train_decision_tree():
 
 @app.route('/train_xgboost')
 def train_xgboost():
-    global X_train, X_test, X_train_scaled, y_train, XGB_model, XGB_train_duration, tuned_params, X_train_data
+    global X_train, X_test, X_train_scaled, y_train, XGB_model, XGB_train_duration, tuned_params, X_train_data, Model
 
     if X_train is None or X_test is None:
         return jsonify(
@@ -740,6 +716,7 @@ def train_xgboost():
     start_time = time()  
 
     XGB_model.fit(X_train_data, y_train)
+    joblib.dump(XGB_model, os.path.join(Model, 'xgb_model.pkl'))
 
     end_time = time()  
     train_duration = end_time - start_time  
@@ -752,24 +729,130 @@ def train_xgboost():
         f"XGBoost Models trained successfully. Training completed at {train_time}. Training duration: {XGB_train_duration:.2f} seconds."
     })
 
+"""
+@app.route('/download_model/<model_name>', methods=['GET'])
+def download_model(model_name):
+    global model_trained_status, Model
+
+    if not model_trained_status[model_name]:
+        return jsonify({"message": f"{model_name.upper()} Model not trained yet."}), 400
+
+    
+    model_map = {
+    'lr': os.path.join(Model, 'lr_model.pkl'),
+    'dt': os.path.join(Model, 'dt_model.pkl'),
+    'xgb': os.path.join(Model, 'xgb_model.pkl')
+    }
+
+    if model_name not in model_map:
+        return jsonify({'message': f'Model name not valid: {model_name}. use lr, dt, or xgb.'}), 400
+
+    file_path = model_map[model_name]
+    
+    return send_file(file_path, as_attachment=True)
+
+
+@app.route('/upload_model/<model_name>', methods=['GET', 'POST'])
+def upload_model(model_name):
+    global LR_model, DT_model, XGB_model
+
+    local_drive_path = f'C:/model/{model_name.lower()}_model.pkl'
+    if not os.path.exists(local_drive_path):
+        return jsonify({'message': f'{model_name.upper()} model not exist in your drive (expected at {local_drive_path})'}), 400
+
+    os.makedirs('models', exist_ok=True)
+
+    destination_path = os.path.join('models', f'{model_name.lower()}_model.pkl')
+    try:
+        shutil.copy(local_drive_path, destination_path)
+    except Exception as e:
+        return jsonify({'message': f'Failed to copy model file: {str(e)}'}), 500
+
+    try:
+        loaded_model = joblib.load(destination_path)
+        if model_name.lower() == 'lr':
+            LR_model = loaded_model
+        elif model_name.lower() == 'dt':
+            DT_model = loaded_model
+        elif model_name.lower() == 'xgb':
+            XGB_model = loaded_model
+        else:
+            return jsonify({'message': f'Invalid model name: {model_name}. Use lr, dt, or xgb'}), 400
+
+        return jsonify({'message': f'{model_name.upper()} model uploaded and loaded successfully from drive'})
+    except Exception as e:
+        return jsonify({'message': f'Failed to load model: {str(e)}'}), 500
+
+
+@app.route('/upload_model')
+def upload_model():
+    return render_template("upload_model.html") 
+
+@app.route('/upload_models', methods=['POST'])
+def upload_models():
+    model_folder = 'Model'
+    os.makedirs(model_folder, exist_ok=True)
+
+    uploaded_files = {
+        'lr_model': 'lr_model.pkl',
+        'dt_model': 'dt_model.pkl',
+        'xgb_model': 'xgb_model.pkl'
+    }
+
+    for form_key, filename in uploaded_files.items():
+        file = request.files.get(form_key)
+        if file:
+            file.save(os.path.join(model_folder, filename))
+            print(f"{filename} berhasil disimpan.")
+
+    return '', 200 
+
+
+def prepare_split_data():
+    global X_train, X_test, y_train, y_test
+
+    if X_train is None or X_test is None or y_train is None or y_test is None:
+        split_path = os.path.join(Model, 'split_data.pkl')
+        if os.path.exists(split_path):
+            try:
+                X_train, X_test, y_train, y_test = joblib.load(split_path)
+            except Exception:
+                return False
+        else:
+            return False
+    return True
+"""
 
 @app.route('/view_model_results')
 def view_model_results():
-    global LR_model, DT_model, XGB_model, X_train, X_test, y_test, y_train, X_test_scaled, X_train_scaled, LR_train_duration, DT_train_duration, XGB_train_duration, X_test_data, LR_y_pred, DT_y_pred, XGB_y_pred
+    global LR_model, DT_model, XGB_model, X_train, X_test, y_test, y_train, X_test_scaled, X_train_scaled, LR_train_duration, DT_train_duration, XGB_train_duration, X_test_data, LR_y_pred, DT_y_pred, XGB_y_pred, Model
+    
+    #if not prepare_split_data():
+       # return jsonify({"message": "Data not split yet or failed to load split_data.pkl"}), 400
+    
+    lr_model_path = os.path.join(Model, 'lr_model.pkl')
+    dt_model_path = os.path.join(Model, 'dt_model.pkl')
+    xgb_model_path = os.path.join(Model, 'xgb_model.pkl')
 
-    if X_train is None or X_test is None:
-        return jsonify(
-            {"message": "Data not split yet. Please split the data first before view the results."})
+    if not (os.path.exists(lr_model_path) and os.path.exists(dt_model_path) and os.path.exists(xgb_model_path)):
+        return jsonify({"message": "pkl file not found or data has not been train yet."}), 400
 
-    if not hasattr(LR_model, "coef_") or not hasattr(
-            DT_model, "tree_") or not hasattr(XGB_model, "get_booster"):
-        return jsonify({"message": "models have not been trained yet."})
+    if os.path.exists(lr_model_path):
+        LR_model = joblib.load(lr_model_path)
+        LR_train_duration = 0
+
+    if os.path.exists(lr_model_path):
+        DT_model = joblib.load(dt_model_path) if os.path.exists(dt_model_path) else DT_model
+        DT_train_duration = 0
+
+    if os.path.exists(lr_model_path):    
+        XGB_model = joblib.load(xgb_model_path) if os.path.exists(xgb_model_path) else XGB_model
+        XGB_train_duration = 0
 
     X_test_data = X_test_scaled if X_test_scaled is not None else X_test
     X_train_data = X_train_scaled if X_train_scaled is not None else X_train
 
     
-
     LR_y_pred = LR_model.predict(X_test_data)
     LR_accuracy = accuracy_score(y_test, LR_y_pred)
     LR_accuracy_percent = "{:.2f}%".format(LR_accuracy * 100)
@@ -797,6 +880,24 @@ def view_model_results():
     LR_Acc = LR_accuracy*100
     LR_Accp = "{:.2f}%".format(LR_Acc)
 
+    """
+    print("X_test_data is None:", X_test_data is None)
+    print("y_test is None:", y_test is None)
+    print("X_train_data is None:", X_train_data is None)
+    print("y_train is None:", y_train is None)
+    print("LR_model is None:", LR_model is None)
+
+    print("LR_train_duration is None:", LR_train_duration is None)
+    print("LR_accuracy_percent is None:", LR_accuracy_percent is None)
+    print("LR_train_accuracy_percent is None:", LR_train_accuracy_percent is None)
+    print("LR_gap_percent is None:", LR_gap_percent is None)
+    print("LR_recall_percent is None:", LR_recall_percent is None)
+    print("LR_precision_percent is None:", LR_precision_percent is None)
+    print("LR_f1_percent is None:", LR_f1_percent is None)
+    print("LR_support is None:", LR_support is None)
+    print("LR_conf_matrix is None:", LR_conf_matrix  is None)
+    """
+
     DT_y_pred = DT_model.predict(X_test_data)
     DT_accuracy = accuracy_score(y_test, DT_y_pred)
     DT_accuracy_percent = "{:.2f}%".format(DT_accuracy * 100)
@@ -823,6 +924,18 @@ def view_model_results():
     DT_Actual_Negative = DT_FP + DT_TN
     DT_Acc = DT_accuracy*100
     DT_Accp = "{:.2f}%".format(DT_Acc)
+
+    """
+    print("DT_train_duration is None:", DT_train_duration is None)
+    print("DT_accuracy_percent is None:", DT_accuracy_percent is None)
+    print("DT_train_accuracy_percent is None:", DT_train_accuracy_percent is None)
+    print("DT_gap_percent is None:", DT_gap_percent is None)
+    print("DT_recall_percent is None:", DT_recall_percent is None)
+    print("DT_precision_percent is None:", DT_precision_percent is None)
+    print("DT_f1_percent is None:", DT_f1_percent is None)
+    print("DT_support is None:", DT_support is None)
+    print("DT_conf_matrix is None:", DT_conf_matrix  is None)
+    """
 
     XGB_y_pred = XGB_model.predict(X_test_data)
     XGB_accuracy = accuracy_score(y_test, XGB_y_pred)
@@ -852,8 +965,21 @@ def view_model_results():
     XGB_Acc = XGB_accuracy*100
     XGB_Accp = "{:.2f}%".format(XGB_Acc)
 
+    """
+    print("XGB_train_duration is None:", XGB_train_duration is None)
+    print("XGB_accuracy_percent is None:", XGB_accuracy_percent is None)
+    print("XGB_train_accuracy_percent is None:", XGB_train_accuracy_percent is None)
+    print("XGB_gap_percent is None:", XGB_gap_percent is None)
+    print("XGB_recall_percent is None:", XGB_recall_percent is None)
+    print("XGB_precision_percent is None:", XGB_precision_percent is None)
+    print("XGB_f1_percent is None:", XGB_f1_percent is None)
+    print("XGB_support is None:", XGB_support is None)
+    print("XGB_conf_matrix is None:", XGB_conf_matrix  is None)
+    """
+
     conclusions = {
-        "accuracy": "",
+        "test_accuracy": "",
+        "train_accuracy": "",
         "recall": "",
         "precision": "",
         "f1_score": ""
@@ -892,11 +1018,18 @@ def view_model_results():
 
 
     if LR_accuracy_percent > DT_accuracy_percent and LR_accuracy_percent > XGB_accuracy_percent:
-        conclusions["accuracy"] = "Logistic Regression"
+        conclusions["test_accuracy"] = "Logistic Regression"
     elif DT_accuracy_percent > LR_accuracy_percent and DT_accuracy_percent > XGB_accuracy_percent:
-        conclusions["accuracy"] = "Decision Tree"
+        conclusions["test_accuracy"] = "Decision Tree"
     else:
-        conclusions["accuracy"] = "XGBoost"
+        conclusions["test_accuracy"] = "XGBoost"
+    
+    if LR_train_accuracy_percent > DT_train_accuracy_percent and LR_train_accuracy_percent > XGB_train_accuracy_percent:
+        conclusions["train_accuracy"] = "Logistic Regression"
+    elif DT_accuracy_percent > LR_accuracy_percent and DT_accuracy_percent > XGB_accuracy_percent:
+        conclusions["train_accuracy"] = "Decision Tree"
+    else:
+        conclusions["train_accuracy"] = "XGBoost"
 
     if LR_recall_percent > DT_recall_percent and LR_recall_percent > XGB_recall_percent:
         conclusions["recall"] = "Logistic Regression"
@@ -990,7 +1123,7 @@ def view_model_results():
                 <p><strong>Test Accuracy:</strong> {LR_accuracy_percent}</p>
                 <p><strong>Train Accuracy:</strong> {LR_train_accuracy_percent}</p>
                 <p><strong>Gap:</strong> {LR_gap_percent}</p>
-                <p><strong>Status Pelatihan Model:</strong> {LR_status}</p>
+                <p><strong>Training Model:</strong> {LR_status}</p>
                 <p><strong>Recall:</strong> {LR_recall_percent}</p>
                 <p><strong>Precision:</strong> {LR_precision_percent}</p>
                 <p><strong>F1 Score:</strong> {LR_f1_percent}</p>
@@ -1012,7 +1145,7 @@ def view_model_results():
                 <p><strong>Test Accuracy:</strong> {DT_accuracy_percent}</p>
                 <p><strong>Train Accuracy:</strong> {DT_train_accuracy_percent}</p>
                 <p><strong>Gap:</strong> {DT_gap_percent}</p>
-                <p><strong>Status Pelatihan Model:</strong> {DT_status}</p>
+                <p><strong>Training Model:</strong> {DT_status}</p>
                 <p><strong>Recall:</strong> {DT_recall_percent}</p>
                 <p><strong>Precision:</strong> {DT_precision_percent}</p>
                 <p><strong>F1 Score:</strong> {DT_f1_percent}</p>
@@ -1032,7 +1165,7 @@ def view_model_results():
                 <p><strong>Test Accuracy:</strong> {XGB_accuracy_percent}</p>
                 <p><strong>Train Accuracy:</strong> {XGB_train_accuracy_percent}</p>
                 <p><strong>Gap:</strong> {XGB_gap_percent}</p>
-                <p><strong>Status Pelatihan Model:</strong> {XGB_status}</p>
+                <p><strong>Training Model:</strong> {XGB_status}</p>
                 <p><strong>Recall:</strong> {XGB_recall_percent}</p>
                 <p><strong>Precision:</strong> {XGB_precision_percent}</p>
                 <p><strong>F1 Score:</strong> {XGB_f1_percent}</p>
@@ -1054,7 +1187,8 @@ def view_model_results():
             <table>
                 <thead>
                     <tr>
-                        <th>Accuracy</th>
+                        <th>Test Accuracy</th>
+                        <th>Train Accuracy</th>
                         <th>Recall</th>
                         <th>Precision</th>
                         <th>F1-Score</th>
@@ -1062,7 +1196,8 @@ def view_model_results():
                 </thead>
                 <tbody>
                     <tr>
-                        <td>{conclusions['accuracy']}</td>
+                        <td>{conclusions['test_accuracy']}</td>
+                        <td>{conclusions['train_accuracy']}</td>
                         <td>{conclusions['recall']}</td>
                         <td>{conclusions['precision']}</td>
                         <td>{conclusions['f1_score']}</td>
@@ -1078,131 +1213,6 @@ def view_model_results():
 
     return jsonify({"message": result_string})
 
-
-@app.route('/view_shap_lr')
-def view_shap_lr():
-    global LR_model, X_test, X_train
-
-    if LR_model is None or X_test is None or X_train is None:
-        return jsonify({"message": "Model or test data not available."})
-
-    feature_names = X_test.columns.tolist()
-
-    # SHAP explainer untuk model linear
-    explainer = shap.Explainer(LR_model, X_train)
-    shap_values = explainer(X_test)
-
-    # Buat summary plot
-    fig = plt.figure()
-    shap.summary_plot(shap_values, features=X_test, feature_names=feature_names, show=False)
-    plt.title("SHAP Summary Plot for Logistic Regression")
-
-    buf = BytesIO()
-    plt.savefig(buf, format="png", bbox_inches="tight")
-    buf.seek(0)
-    image_base64 = base64.b64encode(buf.read()).decode('utf-8')
-    buf.close()
-
-    result_string = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>SHAP Summary Plot - LR</title>
-    </head>
-    <body>
-        <h2>SHAP Summary Plot for Logistic Regression</h2>
-        <img src="data:image/png;base64,{image_base64}" alt="SHAP Summary Plot">
-    </body>
-    </html>
-    """
-
-    return jsonify({"message": result_string})
-
-
-@app.route('/view_shap_dt')
-def view_shap_dt():
-    global DT_model, X_test
-
-    if DT_model is None or X_test is None:
-        return jsonify({"message": "Model or test data not available."})
-
-    feature_names = X_test.columns.tolist()
-
-    # SHAP explainer untuk decision tree
-    explainer = shap.TreeExplainer(DT_model)
-    shap_values = explainer.shap_values(X_test)
-
-
-    # Buat figure yang lebih besar agar tidak dempet
-    fig, ax = plt.subplots(figsize=(50, 60))
-    shap.summary_plot(shap_values, X_test, feature_names=feature_names, plot_type="bar", show=False)
-
-    # Simpan ke buffer
-    buf = BytesIO()
-    plt.savefig(buf, format="png", bbox_inches="tight")
-    buf.seek(0)
-    image_base64 = base64.b64encode(buf.read()).decode('utf-8')
-    buf.close()
-    plt.close()
-
-    result_string = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>SHAP Summary Plot - DT</title>
-    </head>
-    <body style="background-color:#f5f5f5;">
-        <h2 style="font-family:sans-serif;">SHAP Summary Plot for Decision Tree</h2>
-        <img src="data:image/png;base64,{image_base64}" alt="SHAP Summary Plot" style="max-width:100%; height:auto;">
-    </body>
-    </html>
-    """
-
-    return jsonify({"message": result_string})
-
-
-
-@app.route('/view_shap_xgb')
-def view_shap():
-    global XGB_model, X_test, X_test_scaled
-
-    if XGB_model is None or X_test_scaled is None:
-        return jsonify({"message": "Model or test data not available."})
-
-    feature_names = X_test.columns.tolist()
-
-    # Initialize the SHAP explainer
-    explainer = shap.Explainer(XGB_model)
-
-    # Calculate SHAP values
-    shap_values = explainer(X_test_scaled)
-    
-    # Create a summary plot
-    fig, ax = plt.subplots()
-    shap.summary_plot(shap_values, features=X_test_scaled,                     
-        feature_names=feature_names, plot_type="dot")
-    plt.title("SHAP Summary Plot for XGBoost")
-
-    buf = BytesIO()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    image_base64 = base64.b64encode(buf.read()).decode('utf-8')
-    buf.close()
-    
-    result_string = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>SHAP Summary Plot</title>
-    </head>
-    <body>
-        <h2>SHAP Summary Plot for XGBoost</h2>
-        <img src="data:image/png;base64,{image_base64}" alt="SHAP Summary Plot">
-    </body>
-    </html>
-    """
-
-    return jsonify({"message": result_string})
 
 @app.route('/check_feature_testing_data_lr')
 def check_feature_testing_data_lr():
@@ -1293,8 +1303,8 @@ def download_xgb_predictions():
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # Gunakan port dari environment variable
-    app.run(host='0.0.0.0', port=port)  # Wajib pakai host='0.0.0.0' agar bisa diakses di Fly.io
+    port = int(os.environ.get("PORT", 5000))  
+    app.run(host='0.0.0.0', port=port)  
     
 '''
 if __name__ == '__main__':
