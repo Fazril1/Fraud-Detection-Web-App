@@ -124,10 +124,10 @@ $(document).ready(function() {
   });
 
    $('#removeRedundancyFeatureBtn').click(function() {
-       $('#loadingremoveRedundancyFeature').show();
+       $('#loadingremoveredundancyfeature').show();
      $.get('/remove_redundancy_feature', function(response) {
        $('#content').text(response.message);
-       $('#loadingremoveRedundancyFeature').hide();
+       $('#loadingremoveredundancyfeature').hide();
        });
     });
 
