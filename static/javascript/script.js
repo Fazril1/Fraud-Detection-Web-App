@@ -258,6 +258,14 @@ $(document).ready(function() {
       });
     });
 
+    $('#downloadAllTrainedModelsBtn').click(function() {
+      $('#loadingdownloadalltrainedmodels').show();
+    $.get('/download_all_trained_models', function(response) {
+      $('#content').text(response.message);
+      $('#loadingdownloadalltrainedmodels').hide();
+      });
+    });
+
     /*
     $('#uploadTrainModelBtn').click(function() {
       $('#loadinguploadtrainmodel').show();
@@ -265,7 +273,6 @@ $(document).ready(function() {
       $('#loadinguploadtrainmodel').hide();
       });
       */
-
 
   $('#viewModelResultBtn').click(function () {
     $('#loadingviewresult').show();
@@ -280,10 +287,10 @@ $(document).ready(function() {
       error: function (xhr) {
         $('#loadingviewresult').hide();
         const errorMsg = xhr.responseJSON?.message || "There's an error while processing the model result.";
-        alert("Gagal: " + errorMsg);
+        alert(errorMsg);
       }
-  });
-});  
+    });
+  });  
 
     $('#downloadLrPredictedModelBtn').click(function() {
       $('#loadingdownloadlrpredictedmodel').show();

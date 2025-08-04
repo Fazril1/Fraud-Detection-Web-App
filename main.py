@@ -611,7 +611,7 @@ def train_logistic_regression():
     start_time = time()  
 
     LR_model.fit(X_train_data, y_train)
-    joblib.dump(LR_model, os.path.join(Model, 'lr_model.pkl'))
+    #joblib.dump(LR_model, os.path.join(Model, 'lr_model.pkl'))
 
     end_time = time()  
     train_duration = end_time - start_time  
@@ -659,7 +659,7 @@ def train_decision_tree():
     start_time = time()  
 
     DT_model.fit(X_train_data, y_train)
-    joblib.dump(DT_model, os.path.join(Model, 'dt_model.pkl'))
+    #joblib.dump(DT_model, os.path.join(Model, 'dt_model.pkl'))
 
     end_time = time() 
     train_duration = end_time - start_time 
@@ -716,7 +716,7 @@ def train_xgboost():
     start_time = time()  
 
     XGB_model.fit(X_train_data, y_train)
-    joblib.dump(XGB_model, os.path.join(Model, 'xgb_model.pkl'))
+    #joblib.dump(XGB_model, os.path.join(Model, 'xgb_model.pkl'))
 
     end_time = time()  
     train_duration = end_time - start_time  
@@ -724,10 +724,19 @@ def train_xgboost():
 
     train_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    return jsonify({
-        "message":
+    return jsonify({"message":
         f"XGBoost Models trained successfully. Training completed at {train_time}. Training duration: {XGB_train_duration:.2f} seconds."
     })
+
+@app.route('/download_all_trained_models')
+def save_model():
+    global LR_model, DT_model, XGB_model, Model
+
+    joblib.dump(LR_model, os.path.join(Model, 'lr_model.pkl'))
+    joblib.dump(DT_model, os.path.join(Model, 'dt_model.pkl'))
+    joblib.dump(XGB_model, os.path.join(Model, 'xgb_model.pkl'))
+
+    return jsonify({"message": "All models have been saved to .pkl files."})
 
 """
 @app.route('/download_model/<model_name>', methods=['GET'])
@@ -834,8 +843,26 @@ def view_model_results():
     dt_model_path = os.path.join(Model, 'dt_model.pkl')
     xgb_model_path = os.path.join(Model, 'xgb_model.pkl')
 
-    if not (os.path.exists(lr_model_path) and os.path.exists(dt_model_path) and os.path.exists(xgb_model_path)):
-        return jsonify({"message": "pkl file not found or data has not been train yet."}), 400
+    #if not (os.path.exists(lr_model_path) and os.path.exists(dt_model_path) and os.path.exists(xgb_model_path)):
+        #return jsonify({"message": "pkl file not found."}), 400
+    
+    lr_loaded_model = (
+        joblib.load(lr_model_path) if os.path.exists(lr_model_path)
+        else LR_model if LR_model is not None and hasattr(LR_model, "predict")
+        else None
+    )
+
+    dt_loaded_model = (
+        joblib.load(dt_model_path) if os.path.exists(dt_model_path)
+        else DT_model if DT_model is not None and hasattr(DT_model, "predict")
+        else None
+    )
+
+    xgb_loaded_model = (
+        joblib.load(xgb_model_path) if os.path.exists(xgb_model_path)
+        else XGB_model if XGB_model is not None and hasattr(XGB_model, "predict")
+        else None
+    )
 
     if os.path.exists(lr_model_path):
         LR_model = joblib.load(lr_model_path)
