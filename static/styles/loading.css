@@ -213,7 +213,7 @@
     font-size: 30px;
 }
 
-
+/*
 #loadingdownloadalltrainedmodels {
     display: none;
     position: fixed;
@@ -223,7 +223,7 @@
     z-index: 1000;
     font-size: 30px;
 }
-
+*/
 
 #loadinguploadtrainmodel {
     display: none;

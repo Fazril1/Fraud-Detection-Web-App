@@ -733,6 +733,7 @@ def train_xgboost():
         f"XGBoost Models trained successfully. Training completed at {train_time}. Training duration: {XGB_train_duration:.2f} seconds."
     })
 
+"""
 @app.route('/download_all_trained_models')
 def save_model():
     global LR_model, DT_model, XGB_model, Model
@@ -743,7 +744,7 @@ def save_model():
 
     return jsonify({"message": "All models have been saved to .pkl files."})
 
-"""
+
 @app.route('/download_model/<model_name>', methods=['GET'])
 def download_model(model_name):
     global model_trained_status, Model

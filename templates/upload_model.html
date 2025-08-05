@@ -4,15 +4,15 @@
     <form id="uploadModelForm" enctype="multipart/form-data">
         <div>
             <label>Upload Logistic Regression (.pkl)</label>
-            <input type="file" name="lr_model" accept=".pkl" required>
+            <input type="file" id="lrInput" name="lr_model" accept=".pkl" required>
         </div>
         <div>
             <label>Upload Decision Tree (.pkl)</label>
-            <input type="file" name="dt_model" accept=".pkl" required>
+            <input type="file" id="dtInput" name="dt_model" accept=".pkl" required>
         </div>
         <div>
             <label>Upload XGBoost (.pkl)</label>
-            <input type="file" name="xgb_model" accept=".pkl" required>
+            <input type="file" id="xgbInput" name="xgb_model" accept=".pkl" required>
         </div>
         <button type="submit" class="btn btn-success mt-2">Submit</button>
     </form>
@@ -20,42 +20,76 @@
     <div id="loadinguploadtrainmodel" style="display: none;" class="text-info mt-2">
         Uploading...
     </div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-$(document).ready(function () {
-    $('#uploadTrainModelBtn').click(function () {
-        $('#uploadModelContainer').slideDown(); 
-    });
 
-    $('#uploadModelForm').submit(function (e) {
-        e.preventDefault(); 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#uploadTrainModelBtn').click(function () {
+                $('#uploadModelContainer').slideDown();
+            });
 
-        var formData = new FormData(this);
-        $('#loadinguploadtrainmodel').show();
+            function validateModelFilenames(formData) {
+                const errors = [];
 
-        if (!formData.get('lr_model') || !formData.get('dt_model') || !formData.get('xgb_model')) {
-            alert('All file models are required!');
-            $('#loadinguploadtrainmodel').hide();
-            return;
-        }
+                // Reset borders
+                $('#lrInput, #dtInput, #xgbInput').css('border', '');
 
-        $.ajax({
-            url: '/upload_models',      
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function () {
-                alert('Upload Success!');
-                window.location.href = '/konten';  
-            },
-            error: function (xhr) {
-                alert('Upload Failed: ' + xhr.status + ' - ' + xhr.statusText);
-                console.error(xhr.responseText);
-                $('#loadinguploadtrainmodel').hide();
+                const lrFile = formData.get('lr_model');
+                const dtFile = formData.get('dt_model');
+                const xgbFile = formData.get('xgb_model');
+
+                if (!lrFile || !dtFile || !xgbFile) {
+                    errors.push('All model files are required!');
+                    return errors;
+                }
+
+                // Validation logic: check if each file name includes expected substring
+                if (!lrFile.name.toLowerCase().includes('lr')) {
+                    errors.push('Wrong .pkl file in Logistic Regression file uploader');
+                    $('#lrInput').css('border', '2px solid red');
+                }
+                if (!dtFile.name.toLowerCase().includes('dt')) {
+                    errors.push('Wrong .pkl file in Decision Tree file uploader');
+                    $('#dtInput').css('border', '2px solid red');
+                }
+                if (!xgbFile.name.toLowerCase().includes('xgb')) {
+                    errors.push('Wrong .pkl file in XGBoost file uploader');
+                    $('#xgbInput').css('border', '2px solid red');
+                }
+
+                return errors;
             }
+
+            $('#uploadModelForm').submit(function (e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                $('#loadinguploadtrainmodel').show();
+
+                const errors = validateModelFilenames(formData);
+                if (errors.length > 0) {
+                    alert('Upload Failed:\n' + errors.join('\n'));
+                    $('#loadinguploadtrainmodel').hide();
+                    return;
+                }
+
+                $.ajax({
+                    url: '/upload_models',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function () {
+                        alert('Upload Success!');
+                        window.location.href = '/konten';
+                    },
+                    error: function (xhr) {
+                        alert('Upload Failed: ' + xhr.status + ' - ' + xhr.statusText);
+                        console.error(xhr.responseText);
+                        $('#loadinguploadtrainmodel').hide();
+                    }
+                });
+            });
         });
-    });
-});
-</script>
+    </script>
 </div>
