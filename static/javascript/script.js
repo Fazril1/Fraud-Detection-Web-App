@@ -258,6 +258,7 @@ $(document).ready(function() {
       });
     });
 
+    
     $('#downloadAllTrainedModelsBtn').click(function() {
       $('#loadingdownloadalltrainedmodels').show();
     $.get('/download_all_trained_models', function(response) {
@@ -265,14 +266,13 @@ $(document).ready(function() {
       $('#loadingdownloadalltrainedmodels').hide();
       });
     });
+    
 
-    /*
     $('#uploadTrainModelBtn').click(function() {
       $('#loadinguploadtrainmodel').show();
       window.location.href = '/upload_model';
       $('#loadinguploadtrainmodel').hide();
       });
-      */
 
   $('#viewModelResultBtn').click(function () {
     $('#loadingviewresult').show();

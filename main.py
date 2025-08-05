@@ -42,8 +42,13 @@ LR_model = DT_model = XGB_model = None
 
 LR_train_duration = DT_train_duration = XGB_train_duration = None
 
-Model = os.path.join(os.path.expanduser("~"), "Downloads")
-os.makedirs(Model, exist_ok=True)
+Model = os.path.join(os.path.expanduser("~"), "Downloads") 
+#os.makedirs(Model, exist_ok=True)
+
+model_folder = 'Model'
+
+
+
 
 
 param_grids = {
@@ -792,14 +797,14 @@ def upload_model(model_name):
     except Exception as e:
         return jsonify({'message': f'Failed to load model: {str(e)}'}), 500
 
-
+"""
 @app.route('/upload_model')
 def upload_model():
     return render_template("upload_model.html") 
 
 @app.route('/upload_models', methods=['POST'])
 def upload_models():
-    model_folder = 'Model'
+    global model_folder
     os.makedirs(model_folder, exist_ok=True)
 
     uploaded_files = {
@@ -816,7 +821,7 @@ def upload_models():
 
     return '', 200 
 
-
+"""
 def prepare_split_data():
     global X_train, X_test, y_train, y_test
 
@@ -834,14 +839,14 @@ def prepare_split_data():
 
 @app.route('/view_model_results')
 def view_model_results():
-    global LR_model, DT_model, XGB_model, X_train, X_test, y_test, y_train, X_test_scaled, X_train_scaled, LR_train_duration, DT_train_duration, XGB_train_duration, X_test_data, LR_y_pred, DT_y_pred, XGB_y_pred, Model
+    global LR_model, DT_model, XGB_model, X_train, X_test, y_test, y_train, X_test_scaled, X_train_scaled, LR_train_duration, DT_train_duration, XGB_train_duration, X_test_data, LR_y_pred, DT_y_pred, XGB_y_pred, model_folder
     
     #if not prepare_split_data():
        # return jsonify({"message": "Data not split yet or failed to load split_data.pkl"}), 400
     
-    lr_model_path = os.path.join(Model, 'lr_model.pkl')
-    dt_model_path = os.path.join(Model, 'dt_model.pkl')
-    xgb_model_path = os.path.join(Model, 'xgb_model.pkl')
+    lr_model_path = os.path.join(model_folder, 'lr_model.pkl')
+    dt_model_path = os.path.join(model_folder, 'dt_model.pkl')
+    xgb_model_path = os.path.join(model_folder, 'xgb_model.pkl')
 
     #if not (os.path.exists(lr_model_path) and os.path.exists(dt_model_path) and os.path.exists(xgb_model_path)):
         #return jsonify({"message": "pkl file not found."}), 400

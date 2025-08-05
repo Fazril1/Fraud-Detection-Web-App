@@ -34,7 +34,7 @@ $(document).ready(function () {
         $('#loadinguploadtrainmodel').show();
 
         if (!formData.get('lr_model') || !formData.get('dt_model') || !formData.get('xgb_model')) {
-            alert('Semua file model wajib diisi!');
+            alert('All file models are required!');
             $('#loadinguploadtrainmodel').hide();
             return;
         }
@@ -46,11 +46,11 @@ $(document).ready(function () {
             processData: false,
             contentType: false,
             success: function () {
-                alert('Upload berhasil!');
+                alert('Upload Success!');
                 window.location.href = '/konten';  
             },
             error: function (xhr) {
-                alert('Upload gagal: ' + xhr.status + ' - ' + xhr.statusText);
+                alert('Upload Failed: ' + xhr.status + ' - ' + xhr.statusText);
                 console.error(xhr.responseText);
                 $('#loadinguploadtrainmodel').hide();
             }
